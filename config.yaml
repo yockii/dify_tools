@@ -1,0 +1,60 @@
+# 服务器配置
+server:
+  port: 8080
+  mode: debug  # debug, release
+  print_routes: true
+  node_id: 1
+  app_name: dify_tools
+
+# 数据库配置
+database:
+  type: postgres  # postgres, mysql
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgresql
+  dbname: dify_tools
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600  # 单位：秒
+
+# JWT配置
+jwt:
+  secret: your-jwt-secret-key  # 请修改为安全的随机字符串
+  expire: 86400  # token有效期，单位：秒
+
+# 日志配置
+log:
+  filename: logs/app.log
+  max_size: 100    # 单个日志文件最大尺寸，单位：MB
+  max_backups: 3   # 保留的旧日志文件数量
+  max_age: 28      # 保留的旧日志最大天数
+  compress: true   # 是否压缩旧日志
+
+# 安全配置
+security:
+  allowed_origins: "*"  # CORS配置，多个域名用逗号分隔
+  session_timeout: 86400  # 会话超时时间，单位：秒
+  token_timeout: 900  # token超时时间，单位：秒
+
+# 限流配置
+rate_limit:
+  enabled: true
+  max_requests: 1000  # 每个时间窗口内的最大请求数
+  duration: 3600      # 时间窗口长度，单位：秒
+
+# 缓存配置
+cache:
+  type: memory  # memory, redis
+  redis:
+    host: localhost
+    port: 6379
+    password: ""
+    db: 0
+    pool_size: 10
+
+# 初始管理员账号
+admin:
+  username: admin
+  password: admin123  # 请修改为安全的密码
+  email: admin@example.com

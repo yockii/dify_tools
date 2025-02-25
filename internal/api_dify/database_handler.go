@@ -2,8 +2,10 @@ package difyapi
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/yockii/dify_tools/internal/datasource"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
+	"github.com/yockii/dify_tools/pkg/logger"
 )
 
 type DatabaseHandler struct {
@@ -107,5 +109,46 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 	return c.JSON(service.OK(tables))
 }
 func (h *DatabaseHandler) ExecuteSqlForDatabase(c *fiber.Ctx) error {
-	return nil
+	application, _ := c.Locals("application").(*model.Application)
+	if application == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidCredential))
+	}
+
+	type Req struct {
+		Sql          string `json:"sql"`
+		DataSourceID uint64 `json:"datasourceId,string"`
+	}
+	req := new(Req)
+	if err := c.BodyParser(req); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+	}
+
+	if req.Sql == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+	}
+
+	// 检查datasource是否该应用
+	dataSource, err := h.dataSourceService.Get(c.Context(), req.DataSourceID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+	}
+	if dataSource.ApplicationID != application.ID {
+		return c.Status(fiber.StatusForbidden).JSON(service.Error(service.ErrForbidden))
+	}
+
+	// 得到datasource的连接
+	db, err := datasource.GetDB(dataSource)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+	}
+
+	// 进行查询，并把结果放到map[string]interface{}
+	var result []map[string]interface{}
+	err = db.Raw(req.Sql).Find(&result).Error
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+	}
+
+	return c.JSON(service.OK(result))
 }

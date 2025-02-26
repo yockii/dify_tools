@@ -15,7 +15,7 @@ type User struct {
 	Username  string    `json:"username" gorm:"type:varchar(50);uniqueIndex;not null"`
 	Password  string    `json:"password,omitempty" gorm:"type:varchar(100);not null"`
 	RoleID    uint64    `json:"roleId,string" gorm:"index;not null"`
-	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, 0: 禁用
+	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
 	LastLogin time.Time `json:"lastLoginAt" gorm:"type:timestamp"`
 	UpdatedAt time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
 }
@@ -82,7 +82,7 @@ type Role struct {
 	BaseModel
 	Name      string    `json:"name" gorm:"type:varchar(50);not null"`
 	Code      string    `json:"code" gorm:"type:varchar(50);uniqueIndex;not null"`
-	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, 0: 禁用
+	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
 	UpdatedAt time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
 }
 
@@ -104,7 +104,7 @@ type Permission struct {
 	Code      string    `json:"code" gorm:"type:varchar(50);uniqueIndex;not null"`
 	Name      string    `json:"name" gorm:"type:varchar(50);not null"`
 	Type      string    `json:"type" gorm:"type:varchar(20);not null"`     // menu, button, api
-	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, 0: 禁用
+	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
 	ParentID  uint64    `json:"parentId,string" gorm:"index"`
 	Sort      int       `json:"sort" gorm:"type:int;default:0"`
 	UpdatedAt time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`

@@ -2,6 +2,7 @@ package difyapi
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/datasource"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
@@ -36,7 +37,7 @@ func (h *DatabaseHandler) RegisterRoutes(router fiber.Router) {
 func (h *DatabaseHandler) GetDatabases(c *fiber.Ctx) error {
 	application, _ := c.Locals("application").(*model.Application)
 	if application == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidCredential))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidCredential))
 	}
 
 	list, _, err := h.dataSourceService.List(c.Context(), &model.DataSource{
@@ -52,21 +53,21 @@ func (h *DatabaseHandler) GetDatabases(c *fiber.Ctx) error {
 func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 	application, _ := c.Locals("application").(*model.Application)
 	if application == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidCredential))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidCredential))
 	}
 	type Req struct {
 		DatasourceID uint64 `json:"datasourceId,string"`
 	}
 	req := new(Req)
 	if err := c.QueryParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	dataSource, err := h.dataSourceService.Get(c.Context(), req.DatasourceID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 	if dataSource.ApplicationID != application.ID {
-		return c.Status(fiber.StatusForbidden).JSON(service.Error(service.ErrForbidden))
+		return c.Status(fiber.StatusForbidden).JSON(service.Error(constant.ErrForbidden))
 	}
 
 	type TableWithColumns struct {
@@ -83,7 +84,7 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 			DataSourceID: dataSource.ID,
 		}, len(tables), 100)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 		}
 
 		for _, t := range list {
@@ -97,7 +98,7 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 					TableID: t.ID,
 				}, len(cl), 100)
 				if err != nil {
-					return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+					return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 				}
 				cl = append(cl, tempList...)
 			}
@@ -111,7 +112,7 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 func (h *DatabaseHandler) ExecuteSqlForDatabase(c *fiber.Ctx) error {
 	application, _ := c.Locals("application").(*model.Application)
 	if application == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidCredential))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidCredential))
 	}
 
 	type Req struct {
@@ -121,33 +122,33 @@ func (h *DatabaseHandler) ExecuteSqlForDatabase(c *fiber.Ctx) error {
 	req := new(Req)
 	if err := c.BodyParser(req); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if req.Sql == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	// 检查datasource是否该应用
 	dataSource, err := h.dataSourceService.Get(c.Context(), req.DataSourceID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 	if dataSource.ApplicationID != application.ID {
-		return c.Status(fiber.StatusForbidden).JSON(service.Error(service.ErrForbidden))
+		return c.Status(fiber.StatusForbidden).JSON(service.Error(constant.ErrForbidden))
 	}
 
 	// 得到datasource的连接
 	db, err := datasource.GetDB(dataSource)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 
 	// 进行查询，并把结果放到map[string]interface{}
 	var result []map[string]interface{}
 	err = db.Raw(req.Sql).Find(&result).Error
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 
 	return c.JSON(service.OK(result))

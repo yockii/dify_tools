@@ -23,16 +23,17 @@ type Server struct {
 	app *fiber.App
 
 	// 各个service
-	userSrv        service.UserService
-	roleSrv        service.RoleService
-	sessionSrv     service.SessionService
-	authSrv        service.AuthService
-	logSrv         service.LogService
-	applicationSrv service.ApplicationService
-	dataSourceSrv  service.DataSourceService
-	tableInfoSrv   service.TableInfoService
-	columnInfoSrv  service.ColumnInfoService
-	dictSrc        service.DictService
+	userSrv          service.UserService
+	roleSrv          service.RoleService
+	sessionSrv       service.SessionService
+	authSrv          service.AuthService
+	logSrv           service.LogService
+	applicationSrv   service.ApplicationService
+	dataSourceSrv    service.DataSourceService
+	tableInfoSrv     service.TableInfoService
+	columnInfoSrv    service.ColumnInfoService
+	dictSrc          service.DictService
+	knowledgeBaseSrv service.KnowledgeBaseService
 }
 
 func New() *Server {
@@ -101,6 +102,8 @@ func (s *Server) setupServices() {
 	s.columnInfoSrv = service.NewColumnInfoService()
 
 	s.dictSrc = service.NewDictService()
+
+	s.knowledgeBaseSrv = service.NewKnowledgeBaseService(s.dictSrc)
 }
 
 // setupMiddleware 配置中间件
@@ -136,10 +139,15 @@ func (s *Server) setupSystemRoutes() {
 		s.dataSourceSrv,
 		s.tableInfoSrv,
 		s.columnInfoSrv,
+		s.knowledgeBaseSrv,
 		s.logSrv,
 	)
 	sysapi.RegisterDictHandler(
 		s.dictSrc,
+		s.logSrv,
+	)
+	sysapi.RegisterKnowledgeBaseHandler(
+		s.knowledgeBaseSrv,
 		s.logSrv,
 	)
 

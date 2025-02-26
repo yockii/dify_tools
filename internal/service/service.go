@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 )
 
@@ -18,6 +19,7 @@ type DictService interface {
 	Delete(ctx context.Context, id uint64) error
 	Get(ctx context.Context, id uint64) (*model.Dict, error)
 	List(ctx context.Context, condition *model.Dict, offset, limit int) ([]*model.Dict, int64, error)
+	GetByCode(ctx context.Context, code string) (*model.Dict, error)
 }
 
 type UserService interface {
@@ -105,6 +107,12 @@ type ColumnInfoService interface {
 	List(ctx context.Context, condition *model.ColumnInfo, offset, limit int) ([]*model.ColumnInfo, int64, error)
 }
 
+type KnowledgeBaseService interface {
+	CreateKnowledgeBase(ctx context.Context, knowledgeBase *model.KnowledgeBase) error
+	Delete(ctx context.Context, id uint64) error
+	List(ctx context.Context, condition *model.KnowledgeBase, offset, limit int) ([]*model.KnowledgeBase, int64, error)
+}
+
 // /////////////////////////////
 // Response 通用响应结构
 type Response struct {
@@ -131,7 +139,7 @@ func NewResponse(data interface{}, err error) *Response {
 		}
 	}
 
-	code := GetErrorCode(err)
+	code := constant.GetErrorCode(err)
 	return &Response{
 		Code:    code,
 		Message: err.Error(),

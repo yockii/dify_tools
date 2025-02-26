@@ -1,4 +1,4 @@
-package model
+package constant
 
 const (
 	LogActionLogin = 1 + iota
@@ -20,14 +20,11 @@ const (
 	LogActionCreateApplication = 31 + iota
 	LogActionUpdateApplication
 	LogActionDeleteApplication
+	LogActionUpdateApplicationConfig
 )
 
 const (
-	LogActionUpdateApplicationConfig = 41 + iota
-)
-
-const (
-	LogActionCreateDataSource = 51 + iota
+	LogActionCreateDataSource = 41 + iota
 	LogActionUpdateDataSource
 	LogActionDeleteDataSource
 	LogActionSyncDataSource
@@ -36,7 +33,7 @@ const (
 )
 
 const (
-	LogActionCreateDict = 61 + iota
+	LogActionCreateDict = 51 + iota
 	LogActionUpdateDict
 	LogActionDeleteDict
 )

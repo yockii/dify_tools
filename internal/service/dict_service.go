@@ -9,13 +9,15 @@ import (
 
 type dictService struct {
 	*BaseService[*model.Dict]
-	dictMap map[uint64]*model.Dict
+	dictIDMap   map[uint64]*model.Dict
+	dictCodeMap map[string]*model.Dict
 }
 
 func NewDictService() *dictService {
 	return &dictService{
 		NewBaseService[*model.Dict](),
 		make(map[uint64]*model.Dict),
+		make(map[string]*model.Dict),
 	}
 }
 
@@ -25,8 +27,7 @@ func (s *dictService) NewModel() *model.Dict {
 
 func (s *dictService) CheckDuplicate(record *model.Dict) (bool, error) {
 	query := s.db.Model(s.NewModel()).Where(&model.Dict{
-		ParentID: record.ParentID,
-		Code:     record.Code,
+		Code: record.Code,
 	})
 	if record.ID != 0 {
 		query = query.Where("id <> ?", record.ID)
@@ -58,18 +59,35 @@ func (s *dictService) ListOrder() string {
 }
 
 func (s *dictService) GetFromCache(ctx context.Context, id uint64) (*model.Dict, bool) {
-	dict, ok := s.dictMap[id]
+	dict, ok := s.dictIDMap[id]
 	return dict, ok
 }
 
 func (s *dictService) CacheHook(ctx context.Context, dict *model.Dict) {
-	s.dictMap[dict.ID] = dict
+	s.dictIDMap[dict.ID] = dict
+	s.dictCodeMap[dict.Code] = dict
 }
 
 func (s *dictService) DeleteHook(ctx context.Context, dict *model.Dict) {
-	delete(s.dictMap, dict.ID)
+	delete(s.dictIDMap, dict.ID)
+	delete(s.dictCodeMap, dict.Code)
 }
 
 func (s *dictService) UpdateHook(ctx context.Context, dict *model.Dict) {
-	delete(s.dictMap, dict.ID)
+	delete(s.dictIDMap, dict.ID)
+	delete(s.dictCodeMap, dict.Code)
+}
+
+func (s *dictService) GetByCode(ctx context.Context, code string) (*model.Dict, error) {
+	if dict, ok := s.dictCodeMap[code]; ok {
+		return dict, nil
+	}
+	// 从数据库中查询
+	var dict model.Dict
+	err := s.db.Where(&model.Dict{Code: code}).First(&dict).Error
+	if err != nil {
+		return nil, err
+	}
+	s.CacheHook(ctx, &dict)
+	return &dict, nil
 }

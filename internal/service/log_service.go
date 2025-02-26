@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/database"
 	"gorm.io/gorm"
@@ -51,7 +52,7 @@ func (s *logService) ListLogs(ctx context.Context, userID uint64, actions []int,
 func (s *logService) CreateLoginLog(ctx context.Context, userID uint64, ip, userAgent string, success bool) error {
 	log := &model.Log{
 		UserID:    userID,
-		Action:    model.LogActionLogin,
+		Action:    constant.LogActionLogin,
 		IP:        ip,
 		UserAgent: userAgent,
 		Failed:    !success,
@@ -88,7 +89,7 @@ func (s *logService) BatchCreateLogs(ctx context.Context, logs []*model.Log) err
 
 func (s *logService) GetUserLoginHistory(ctx context.Context, userID uint64, limit int) ([]*model.Log, error) {
 	var logs []*model.Log
-	if err := database.GetDB().Where("user_id = ? AND action = ?", userID, model.LogActionLogin).
+	if err := database.GetDB().Where("user_id = ? AND action = ?", userID, constant.LogActionLogin).
 		Order("created_at DESC").
 		Limit(limit).
 		Find(&logs).Error; err != nil {
@@ -99,7 +100,7 @@ func (s *logService) GetUserLoginHistory(ctx context.Context, userID uint64, lim
 
 func (s *logService) GetUserLastLogin(ctx context.Context, userID uint64) (*model.Log, error) {
 	var log model.Log
-	if err := database.GetDB().Where("user_id = ? AND action = ? AND failed = false", userID, model.LogActionLogin).
+	if err := database.GetDB().Where("user_id = ? AND action = ? AND failed = false", userID, constant.LogActionLogin).
 		Order("created_at DESC").
 		First(&log).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {

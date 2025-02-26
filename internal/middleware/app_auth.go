@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/service"
 )
 
@@ -16,16 +17,16 @@ func NewAppMiddleware(
 		apiKey := strings.TrimPrefix(authorization, "Bearer ")
 
 		if apiKey == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, service.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
 		}
 
 		// 检查api_key是否有效
 		application, err := applicationService.GetByApiKey(c.Context(), apiKey)
 		if err != nil {
-			return c.Status(service.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+			return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
 		}
 		if application == nil || application.Status != 1 {
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, service.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
 		}
 
 		// TODO 后续对限流和源做认证

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
 )
@@ -81,11 +82,11 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 		Password string `json:"password"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	uid, token, err := h.authService.Login(c.Context(), req.Username, req.Password)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
 	}
 
 	// 记录登录日志
@@ -103,7 +104,7 @@ func (h *UserHandler) refreshToken(c *fiber.Ctx) error {
 
 	newToken, err := h.authService.Refresh(c.Context(), token)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
 	}
 
 	return c.JSON(service.OK(fiber.Map{
@@ -117,12 +118,12 @@ func (h *UserHandler) logout(c *fiber.Ctx) error {
 	token := strings.TrimPrefix(authorization, "Bearer ")
 
 	if err := h.authService.Logout(c.Context(), token); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录登出日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionLogout, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionLogout, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -143,16 +144,16 @@ func (h *UserHandler) getProfile(c *fiber.Ctx) error {
 func (h *UserHandler) createUser(c *fiber.Ctx) error {
 	var user model.User
 	if err := c.BodyParser(&user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.userService.Create(c.Context(), &user); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
 	creator := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), creator.ID, model.LogActionCreateUser, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), creator.ID, constant.LogActionCreateUser, c.IP(), c.Get("User-Agent"))
 
 	return c.Status(fiber.StatusCreated).JSON(service.OK(user))
 }
@@ -161,19 +162,19 @@ func (h *UserHandler) createUser(c *fiber.Ctx) error {
 func (h *UserHandler) updateUser(c *fiber.Ctx) error {
 	var user model.User
 	if err := c.BodyParser(&user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if user.ID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.userService.Update(c.Context(), &user); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
 	operator := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), operator.ID, model.LogActionUpdateUser, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), operator.ID, constant.LogActionUpdateUser, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(user))
 }
@@ -182,16 +183,16 @@ func (h *UserHandler) updateUser(c *fiber.Ctx) error {
 func (h *UserHandler) deleteUser(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.userService.Delete(c.Context(), id); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
 	operator := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), operator.ID, model.LogActionDeleteUser, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), operator.ID, constant.LogActionDeleteUser, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -200,12 +201,12 @@ func (h *UserHandler) deleteUser(c *fiber.Ctx) error {
 func (h *UserHandler) getUser(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	user, err := h.userService.Get(c.Context(), id)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.OK(user))
@@ -220,12 +221,12 @@ func (h *UserHandler) listUsers(c *fiber.Ctx) error {
 	}
 	condition := new(model.User)
 	if err := c.QueryParser(condition); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	users, total, err := h.userService.List(c.Context(), condition, offset, limit)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.OK(service.NewListResponse(users, total, offset, limit)))
@@ -240,15 +241,15 @@ func (h *UserHandler) updatePassword(c *fiber.Ctx) error {
 		NewPassword string `json:"newPassword"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.userService.UpdatePassword(c.Context(), user.ID, req.OldPassword, req.NewPassword); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
 	}
 
 	// 记录操作日志
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionUpdatePassword, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionUpdatePassword, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -260,16 +261,16 @@ func (h *UserHandler) updateStatus(c *fiber.Ctx) error {
 		Status int    `json:"status"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.userService.UpdateStatus(c.Context(), req.ID, req.Status); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
 	}
 
 	// 记录操作日志
 	operator := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), operator.ID, model.LogActionUpdateUserStatus, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), operator.ID, constant.LogActionUpdateUserStatus, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -284,16 +285,16 @@ func (h *UserHandler) updateStatus(c *fiber.Ctx) error {
 func (h *UserHandler) createRole(c *fiber.Ctx) error {
 	var role model.Role
 	if err := c.BodyParser(&role); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.roleService.Create(c.Context(), &role); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionCreateRole, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionCreateRole, c.IP(), c.Get("User-Agent"))
 
 	return c.Status(fiber.StatusCreated).JSON(service.OK(role))
 }
@@ -302,20 +303,20 @@ func (h *UserHandler) createRole(c *fiber.Ctx) error {
 func (h *UserHandler) updateRole(c *fiber.Ctx) error {
 	var role model.Role
 	if err := c.BodyParser(&role); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if role.ID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.roleService.Update(c.Context(), &role); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionUpdateRole, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionUpdateRole, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(role))
 }
@@ -324,16 +325,16 @@ func (h *UserHandler) updateRole(c *fiber.Ctx) error {
 func (h *UserHandler) deleteRole(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.roleService.Delete(c.Context(), id); err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionDeleteRole, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionDeleteRole, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -342,12 +343,12 @@ func (h *UserHandler) deleteRole(c *fiber.Ctx) error {
 func (h *UserHandler) getRole(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	role, err := h.roleService.Get(c.Context(), id)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.OK(role))
@@ -363,12 +364,12 @@ func (h *UserHandler) listRoles(c *fiber.Ctx) error {
 
 	condition := new(model.Role)
 	if err := c.QueryParser(condition); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	roles, total, err := h.roleService.List(c.Context(), condition, offset, limit)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.OK(service.NewListResponse(roles, total, offset, limit)))
@@ -398,7 +399,7 @@ func (h *UserHandler) listLogs(c *fiber.Ctx) error {
 
 	logs, total, err := h.logService.ListLogs(c.Context(), 0, actions, offset, limit)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.NewResponse(service.NewListResponse(logs, total, offset, limit), nil))
@@ -408,7 +409,7 @@ func (h *UserHandler) listLogs(c *fiber.Ctx) error {
 func (h *UserHandler) getUserLogs(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(c.Query("userId"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	offset := c.QueryInt("offset", 0)
@@ -428,7 +429,7 @@ func (h *UserHandler) getUserLogs(c *fiber.Ctx) error {
 
 	logs, total, err := h.logService.ListLogs(c.Context(), userID, actions, offset, limit)
 	if err != nil {
-		return c.Status(service.GetErrorCode(err)).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.NewResponse(service.NewListResponse(logs, total, offset, limit), nil))

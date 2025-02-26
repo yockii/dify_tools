@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -32,19 +33,19 @@ func NewAuthMiddleware(
 		authorization := c.Get("Authorization")
 		token := strings.TrimPrefix(authorization, "Bearer ")
 		if token == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, service.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
 		}
 
 		// 检查token是否在黑名单中
 		if sessionService != nil && sessionService.IsTokenBlocked(c.Context(), token) {
 			logger.Warn("blocked token used", logger.F("token", token))
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, service.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
 		}
 
 		// 验证token
 		user, err := authService.Verify(c.Context(), token)
 		if err != nil {
-			return c.Status(service.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+			return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
 		}
 
 		// 将用户信息存入上下文

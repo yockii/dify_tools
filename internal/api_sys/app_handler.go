@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -16,6 +17,8 @@ type AppHandler struct {
 	tableInfoService  service.TableInfoService
 	columnInfoService service.ColumnInfoService
 
+	knowledgeService service.KnowledgeBaseService
+
 	logService service.LogService
 }
 
@@ -24,6 +27,7 @@ func RegisterAppHandler(
 	dataSourceService service.DataSourceService,
 	tableInfoService service.TableInfoService,
 	columnInfoService service.ColumnInfoService,
+	knowledgeService service.KnowledgeBaseService,
 
 	logService service.LogService,
 ) {
@@ -32,6 +36,7 @@ func RegisterAppHandler(
 		dataSourceService: dataSourceService,
 		tableInfoService:  tableInfoService,
 		columnInfoService: columnInfoService,
+		knowledgeService:  knowledgeService,
 
 		logService: logService,
 	}
@@ -72,7 +77,7 @@ func (h *AppHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Ha
 func (h *AppHandler) CreateApp(c *fiber.Ctx) error {
 	var app model.Application
 	if err := c.BodyParser(&app); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	app.Status = 1
@@ -80,12 +85,16 @@ func (h *AppHandler) CreateApp(c *fiber.Ctx) error {
 
 	if err := h.appService.Create(c.Context(), &app); err != nil {
 		logger.Error("创建应用失败", logger.F("err", err))
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
+
+	go h.knowledgeService.CreateKnowledgeBase(c.Context(), &model.KnowledgeBase{
+		ApplicationID: app.ID,
+	})
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionCreateApplication, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionCreateApplication, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(app))
 }
@@ -105,7 +114,7 @@ func (h *AppHandler) UpdateApp(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionUpdateApplication, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionUpdateApplication, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(app))
 }
@@ -123,7 +132,7 @@ func (h *AppHandler) DeleteApp(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionDeleteApplication, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionDeleteApplication, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -138,12 +147,12 @@ func (h *AppHandler) ListApps(c *fiber.Ctx) error {
 
 	var condition model.Application
 	if err := c.QueryParser(&condition); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	apps, total, err := h.appService.List(c.Context(), &condition, offset, limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(service.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 
 	return c.JSON(service.OK(service.NewListResponse(apps, total, offset, limit)))
@@ -153,7 +162,7 @@ func (h *AppHandler) ListApps(c *fiber.Ctx) error {
 func (h *AppHandler) GetApp(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	app, err := h.appService.Get(c.Context(), id)
@@ -183,7 +192,7 @@ func (h *AppHandler) CreateDataSource(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionCreateDataSource, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionCreateDataSource, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(dataSource))
 }
@@ -201,7 +210,7 @@ func (h *AppHandler) UpdateDataSource(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionUpdateDataSource, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionUpdateDataSource, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(dataSource))
 }
@@ -219,7 +228,7 @@ func (h *AppHandler) DeleteDataSource(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionDeleteDataSource, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionDeleteDataSource, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -249,7 +258,7 @@ func (h *AppHandler) ListDataSources(c *fiber.Ctx) error {
 func (h *AppHandler) GetDataSource(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	dataSource, err := h.dataSourceService.Get(c.Context(), id)
@@ -264,7 +273,7 @@ func (h *AppHandler) GetDataSource(c *fiber.Ctx) error {
 func (h *AppHandler) SyncDataSource(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.dataSourceService.Sync(c.Context(), id); err != nil {
@@ -273,7 +282,7 @@ func (h *AppHandler) SyncDataSource(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionSyncDataSource, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionSyncDataSource, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(nil))
 }
@@ -291,7 +300,7 @@ func (h *AppHandler) GetDataSourceTables(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 	if condition.DataSourceID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	tables, total, err := h.tableInfoService.List(c.Context(), condition, offset, limit)
@@ -315,7 +324,7 @@ func (h *AppHandler) UpdateDataSourceTable(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionUpdateTableInfo, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionUpdateTableInfo, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(table))
 }
@@ -333,7 +342,7 @@ func (h *AppHandler) GetDataSourceColumns(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 	if condition.TableID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(service.ErrInvalidParams))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	columns, total, err := h.columnInfoService.List(c.Context(), condition, offset, limit)
@@ -357,7 +366,7 @@ func (h *AppHandler) UpdateDataSourceColumn(c *fiber.Ctx) error {
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
-	go h.logService.CreateOperationLog(c.Context(), user.ID, model.LogActionUpdateColumnInfo, c.IP(), c.Get("User-Agent"))
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionUpdateColumnInfo, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(column))
 }

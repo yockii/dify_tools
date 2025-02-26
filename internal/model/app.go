@@ -45,7 +45,7 @@ type DataSource struct {
 	Database      string    `json:"database" gorm:"type:varchar(50);not null"`
 	Schema        string    `json:"schema" gorm:"type:varchar(50);default:public"` // 数据库schema
 	SyncTime      time.Time `json:"syncTime" gorm:"type:timestamp"`
-	Status        int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, 0: 禁用
+	Status        int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
 	CreatedAt     time.Time `json:"createdAt" gorm:"type:timestamp;not null"`
 	UpdatedAt     time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
 }
@@ -118,13 +118,12 @@ func (c *ColumnInfo) BeforeCreate(tx *gorm.DB) error {
 // Usage 使用统计
 type Usage struct {
 	BaseModel
-	AppID     uint64    `json:"applicationId,string" gorm:"index;not null"`
-	Date      string    `json:"date" gorm:"type:varchar(10);index;not null"` // YYYY-MM-DD
-	Requests  int64     `json:"requests" gorm:"type:bigint;default:0"`
-	Tokens    int64     `json:"tokens" gorm:"type:bigint;default:0"`
-	Errors    int64     `json:"errors" gorm:"type:bigint;default:0"`
-	CreatedAt time.Time `json:"createdAt" gorm:"type:timestamp;not null"`
-	UpdatedAt time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	ApplicationID uint64    `json:"applicationId,string" gorm:"index;not null"`
+	Date          string    `json:"date" gorm:"type:varchar(10);index;not null"` // YYYY-MM-DD
+	Requests      int64     `json:"requests" gorm:"type:bigint;default:0"`
+	Tokens        int64     `json:"tokens" gorm:"type:bigint;default:0"`
+	Errors        int64     `json:"errors" gorm:"type:bigint;default:0"`
+	UpdatedAt     time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
 }
 
 func (u *Usage) TableComment() string {

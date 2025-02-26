@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/pkg/config"
 	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
@@ -181,16 +182,71 @@ func InitData(db *gorm.DB) error {
 
 		// 增加字典数据
 		{
+			// 日志类型
+			logTypeDict := &Dict{
+				Name:     "日志类型",
+				Code:     constant.DictTypeCodeLogType,
+				Value:    "日志类型",
+				ParentID: 0,
+				Sort:     0,
+			}
+			if err := tx.Model(&Dict{}).Where(&Dict{
+				Code: logTypeDict.Code,
+			}).Attrs(logTypeDict).FirstOrCreate(logTypeDict).Error; err != nil {
+				return fmt.Errorf("create dict failed: %v", err)
+			}
+			{
+				logMap := []struct {
+					Name  string
+					Value int
+					Code  string
+				}{
+					{Name: "登录", Value: 1, Code: "log_action_login"},
+					{Name: "登出", Value: 2, Code: "log_action_logout"},
+					{Name: "创建用户", Value: 11, Code: "log_action_create_user"},
+					{Name: "编辑用户", Value: 12, Code: "log_action_update_user"},
+					{Name: "删除用户", Value: 13, Code: "log_action_delete_user"},
+					{Name: "修改密码", Value: 14, Code: "log_action_update_password"},
+					{Name: "修改用户状态", Value: 15, Code: "log_action_update_user_status"},
+					{Name: "创建角色", Value: 21, Code: "log_action_create_role"},
+					{Name: "编辑角色", Value: 22, Code: "log_action_update_role"},
+					{Name: "删除角色", Value: 23, Code: "log_action_delete_role"},
+					{Name: "创建应用", Value: 31, Code: "log_action_create_application"},
+					{Name: "编辑应用", Value: 32, Code: "log_action_update_application"},
+					{Name: "删除应用", Value: 33, Code: "log_action_delete_application"},
+					{Name: "修改应用配置", Value: 34, Code: "log_action_update_application_config"},
+					{Name: "创建数据源", Value: 41, Code: "log_action_create_data_source"},
+					{Name: "编辑数据源", Value: 42, Code: "log_action_update_data_source"},
+					{Name: "删除数据源", Value: 43, Code: "log_action_delete_data_source"},
+					{Name: "同步数据源", Value: 44, Code: "log_action_sync_data_source"},
+					{Name: "修改表信息", Value: 45, Code: "log_action_update_table_info"},
+					{Name: "修改列信息", Value: 46, Code: "log_action_update_column_info"},
+					{Name: "创建字典", Value: 51, Code: "log_action_create_dict"},
+					{Name: "编辑字典", Value: 52, Code: "log_action_update_dict"},
+					{Name: "删除字典", Value: 53, Code: "log_action_delete_dict"},
+				}
+				for _, log := range logMap {
+					if err := tx.Model(&Dict{
+						Code:     log.Code,
+						ParentID: logTypeDict.ID,
+					}).Attrs(&Dict{
+						Name:  log.Name,
+						Value: fmt.Sprintf("%d", log.Value),
+						Sort:  0,
+					}).FirstOrCreate(&Dict{}).Error; err != nil {
+						return fmt.Errorf("create dict failed: %v", err)
+					}
+				}
+			}
+
 			difyDict := &Dict{
 				Name:     "Dify配置",
-				Code:     "dify",
+				Code:     constant.DictTypeCodeDify,
 				Value:    "Dify配置",
 				ParentID: 0,
 				Sort:     0,
 			}
-			if err := tx.Model(&Dict{
-				Code: difyDict.Code,
-			}).Where(&Dict{
+			if err := tx.Model(&Dict{}).Where(&Dict{
 				Code: difyDict.Code,
 			}).Attrs(difyDict).FirstOrCreate(difyDict).Error; err != nil {
 				return fmt.Errorf("create dict failed: %v", err)
@@ -199,12 +255,22 @@ func InitData(db *gorm.DB) error {
 			{
 
 				if err := tx.Model(&Dict{
-					Code:     "dify_base_url",
+					Code:     constant.DictCodeDifyBaseUrl,
 					ParentID: difyDict.ID,
 				}).Attrs(&Dict{
 					Name:  "DIFY基础URL",
 					Value: "http://localhost:80/v1",
 					Sort:  0,
+				}).FirstOrCreate(&Dict{}).Error; err != nil {
+					return fmt.Errorf("create dict failed: %v", err)
+				}
+				if err := tx.Model(&Dict{
+					Code:     constant.DictCodeDifyDatasetsToken,
+					ParentID: difyDict.ID,
+				}).Attrs(&Dict{
+					Name:  "DIFY数据集密钥",
+					Value: "",
+					Sort:  1,
 				}).FirstOrCreate(&Dict{}).Error; err != nil {
 					return fmt.Errorf("create dict failed: %v", err)
 				}

@@ -1,4 +1,4 @@
-package service
+package constant
 
 import (
 	"errors"
@@ -29,6 +29,9 @@ var (
 	ErrRoleExists   = errors.New("角色已存在")
 	ErrRoleInUse    = errors.New("角色正在使用")
 	ErrInvalidRole  = errors.New("无效的角色")
+
+	// 字典错误
+	ErrDictNotFound = errors.New("字典不存在")
 )
 
 // 获取错误对应的HTTP状态码

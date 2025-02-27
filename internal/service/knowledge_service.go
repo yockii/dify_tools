@@ -46,6 +46,7 @@ func (s *knowledgeBaseService) CheckDuplicate(record *model.KnowledgeBase) (bool
 	}
 	var count int64
 	if err := query.Count(&count).Error; err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
 		return false, err
 	}
 	return count > 0, nil
@@ -68,19 +69,31 @@ func (s *knowledgeBaseService) BuildCondition(query *gorm.DB, condition *model.K
 func (s *knowledgeBaseService) GetByOuterID(outerID string) (*model.KnowledgeBase, error) {
 	var knowledge model.KnowledgeBase
 	err := s.db.Where(&model.KnowledgeBase{OuterID: outerID}).First(&knowledge).Error
-	return &knowledge, err
+	if err != nil {
+		logger.Error("获取知识库失败", logger.F("err", err))
+		return nil, err
+	}
+	return &knowledge, nil
 }
 
 func (s *knowledgeBaseService) GetByApplicationID(applicationID uint64) ([]*model.KnowledgeBase, error) {
 	var list []*model.KnowledgeBase
 	err := s.db.Where(&model.KnowledgeBase{ApplicationID: applicationID}).Find(&list).Error
-	return list, err
+	if err != nil {
+		logger.Error("获取知识库列表失败", logger.F("err", err))
+		return nil, err
+	}
+	return list, nil
 }
 
 func (s *knowledgeBaseService) GetByApplicationIDAndKnowledgeName(applicationID uint64, knowledgeName string) (*model.KnowledgeBase, error) {
 	var knowledge model.KnowledgeBase
 	err := s.db.Where(&model.KnowledgeBase{ApplicationID: applicationID, KnowledgeBaseName: knowledgeName}).First(&knowledge).Error
-	return &knowledge, err
+	if err != nil {
+		logger.Error("获取知识库失败", logger.F("err", err))
+		return nil, err
+	}
+	return &knowledge, nil
 }
 
 func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.KnowledgeBase) error {
@@ -105,24 +118,22 @@ func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.
 		return err
 	}
 	if difyBaseUrlDict == nil || difyBaseUrlDict.Value == "" {
-		logger.Error("未配置dify接口地址")
+		logger.Warn("未配置dify接口地址", logger.F("dict_id", difyBaseUrlDict.ID))
 		return fmt.Errorf("未配置dify接口地址")
 	}
 	difyBaseUrl := difyBaseUrlDict.Value
 	difyDatasetsTokenDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDatasetsToken)
 	if err != nil {
-		logger.Error("获取dify知识库API密钥失败", logger.F("err", err))
 		return err
 	}
 	if difyDatasetsTokenDict == nil || difyDatasetsTokenDict.Value == "" {
-		logger.Error("未配置dify知识库API密钥")
+		logger.Warn("未配置dify知识库API密钥", logger.F("dict_id", difyDatasetsTokenDict.ID))
 		return fmt.Errorf("未配置dify知识库API密钥")
 	}
 	difyDatasetsToken := difyDatasetsTokenDict.Value
 
 	id, err := dify.NewKnowLedgeBaseClient(difyBaseUrl, difyDatasetsToken).CreateKnowledgeBase(knowledgeBase.KnowledgeBaseName, app.Name)
 	if err != nil {
-		logger.Error("创建知识库失败", logger.F("err", err))
 		return err
 	}
 	knowledgeBase.OuterID = id
@@ -148,21 +159,19 @@ func (s *knowledgeBaseService) DeleteByApplicationID(ctx context.Context, applic
 
 	difyBaseUrlDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyBaseUrl)
 	if err != nil {
-		logger.Error("获取dify接口地址失败", logger.F("err", err))
 		return err
 	}
 	if difyBaseUrlDict == nil || difyBaseUrlDict.Value == "" {
-		logger.Error("未配置dify接口地址")
+		logger.Warn("未配置dify接口地址", logger.F("dict_id", difyBaseUrlDict.ID))
 		return fmt.Errorf("未配置dify接口地址")
 	}
 	difyBaseUrl := difyBaseUrlDict.Value
 	difyDatasetsTokenDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDatasetsToken)
 	if err != nil {
-		logger.Error("获取dify知识库API密钥失败", logger.F("err", err))
 		return err
 	}
 	if difyDatasetsTokenDict == nil || difyDatasetsTokenDict.Value == "" {
-		logger.Error("未配置dify知识库API密钥")
+		logger.Warn("未配置dify知识库API密钥", logger.F("dict_id", difyDatasetsTokenDict.ID))
 		return fmt.Errorf("未配置dify知识库API密钥")
 	}
 	difyDatasetsToken := difyDatasetsTokenDict.Value
@@ -172,12 +181,11 @@ func (s *knowledgeBaseService) DeleteByApplicationID(ctx context.Context, applic
 	for _, knowledgeBase := range knowledgeBaseList {
 		// 调用dify删除知识库
 		if knowledgeBase.OuterID == "" {
-			logger.Error("知识库外部ID为空，忽略", logger.F("knowledgeBase", knowledgeBase))
+			logger.Warn("知识库外部ID为空，忽略", logger.F("knowledgeBase", knowledgeBase))
 			continue
 		}
 		err = difyKnowledgeBaseClient.DeleteKnowledgeBase(knowledgeBase.OuterID)
 		if err != nil {
-			logger.Error("删除知识库失败", logger.F("err", err))
 			continue
 		}
 		// 删除知识库

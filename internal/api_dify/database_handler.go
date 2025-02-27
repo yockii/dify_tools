@@ -60,6 +60,7 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 	}
 	req := new(Req)
 	if err := c.QueryParser(req); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	dataSource, err := h.dataSourceService.Get(c.Context(), req.DatasourceID)
@@ -148,6 +149,7 @@ func (h *DatabaseHandler) ExecuteSqlForDatabase(c *fiber.Ctx) error {
 	var result []map[string]interface{}
 	err = db.Raw(req.Sql).Find(&result).Error
 	if err != nil {
+		logger.Error("执行sql失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 

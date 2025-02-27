@@ -41,6 +41,7 @@ func (h *DictHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.H
 func (h *DictHandler) Create(c *fiber.Ctx) error {
 	record := new(model.Dict)
 	if err := c.BodyParser(record); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if err := h.dictService.Create(c.Context(), record); err != nil {
@@ -57,6 +58,7 @@ func (h *DictHandler) Create(c *fiber.Ctx) error {
 func (h *DictHandler) Update(c *fiber.Ctx) error {
 	record := new(model.Dict)
 	if err := c.BodyParser(record); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if err := h.dictService.Update(c.Context(), record); err != nil {
@@ -73,10 +75,10 @@ func (h *DictHandler) Update(c *fiber.Ctx) error {
 func (h *DictHandler) Delete(c *fiber.Ctx) error {
 	record := new(model.Dict)
 	if err := c.BodyParser(record); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if err := h.dictService.Delete(c.Context(), record.ID); err != nil {
-		logger.Error("删除字典失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 	// 记录操作日志
@@ -89,11 +91,11 @@ func (h *DictHandler) Delete(c *fiber.Ctx) error {
 func (h *DictHandler) Get(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	record, err := h.dictService.Get(c.Context(), id)
 	if err != nil {
-		logger.Error("获取字典失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 	return c.JSON(service.OK(record))
@@ -102,6 +104,7 @@ func (h *DictHandler) Get(c *fiber.Ctx) error {
 func (h *DictHandler) List(c *fiber.Ctx) error {
 	condition := new(model.Dict)
 	if err := c.QueryParser(condition); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	offset := c.QueryInt("offset", 0)
@@ -112,7 +115,6 @@ func (h *DictHandler) List(c *fiber.Ctx) error {
 
 	list, total, err := h.dictService.List(c.Context(), condition, offset, limit)
 	if err != nil {
-		logger.Error("获取字典列表失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))
@@ -126,6 +128,7 @@ func (h *DictHandler) ListByParentCode(c *fiber.Ctx) error {
 	}
 	condition := new(model.Dict)
 	if err := c.QueryParser(condition); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	parentCode := c.Query("parent_code")
@@ -135,7 +138,6 @@ func (h *DictHandler) ListByParentCode(c *fiber.Ctx) error {
 
 	parentDict, err := h.dictService.GetByCode(c.Context(), parentCode)
 	if err != nil {
-		logger.Error("获取父字典失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 	if parentDict == nil {
@@ -145,7 +147,6 @@ func (h *DictHandler) ListByParentCode(c *fiber.Ctx) error {
 	condition.ParentID = parentDict.ID
 	list, total, err := h.dictService.List(c.Context(), condition, offset, limit)
 	if err != nil {
-		logger.Error("获取字典列表失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))

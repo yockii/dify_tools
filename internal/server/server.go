@@ -59,12 +59,13 @@ func (s *Server) Start() error {
 
 	// 启动服务器
 	addr := config.GetServerAddress()
-	logger.Info("服务启动中", logger.F("address", addr))
+	logger.Info("服务监听地址", logger.F("address", addr))
 
 	// 优雅关闭
 	go s.gracefulShutdown()
 
 	if err := s.app.Listen(addr); err != nil {
+		logger.Error("服务停止", logger.F("error", err))
 		return err
 	}
 	return nil

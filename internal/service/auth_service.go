@@ -8,6 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/config"
+	"github.com/yockii/dify_tools/pkg/logger"
 )
 
 type Claims struct {
@@ -46,6 +47,7 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(s.secret)
 	if err != nil {
+		logger.Error("生成token失败", logger.F("error", err))
 		return 0, "", fmt.Errorf("生成token失败: %v", err)
 	}
 
@@ -80,6 +82,7 @@ func (s *authService) Verify(ctx context.Context, tokenString string) (*model.Us
 	})
 
 	if err != nil {
+		logger.Warn("无效token", logger.F("error", err))
 		return nil, fmt.Errorf("无效token")
 	}
 

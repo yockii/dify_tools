@@ -8,6 +8,7 @@ import (
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/database"
+	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +20,7 @@ func NewLogService() LogService {
 
 func (s *logService) CreateLog(ctx context.Context, log *model.Log) error {
 	if err := database.GetDB().Create(log).Error; err != nil {
+		logger.Error("创建日志失败", logger.F("error", err))
 		return fmt.Errorf("创建日志失败: %v", err)
 	}
 	return nil
@@ -38,12 +40,16 @@ func (s *logService) ListLogs(ctx context.Context, userID uint64, actions []int,
 
 	// 获取总数
 	if err := query.Count(&total).Error; err != nil {
+		logger.Error("获取日志总数失败", logger.F("error", err))
 		return nil, 0, fmt.Errorf("获取日志总数失败: %v", err)
 	}
 
-	// 获取列表
-	if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&logs).Error; err != nil {
-		return nil, 0, fmt.Errorf("查询日志失败: %v", err)
+	if total > 0 && limit > 0 {
+		// 获取列表
+		if err := query.Offset(offset).Limit(limit).Order("created_at DESC").Find(&logs).Error; err != nil {
+			logger.Error("查询日志失败", logger.F("error", err))
+			return nil, 0, fmt.Errorf("查询日志失败: %v", err)
+		}
 	}
 
 	return logs, total, nil
@@ -75,6 +81,7 @@ func (s *logService) CreateOperationLog(ctx context.Context, userID uint64, acti
 func (s *logService) DeleteOldLogs(ctx context.Context, days int) error {
 	deadline := time.Now().AddDate(0, 0, -days)
 	if err := database.GetDB().Where("created_at < ?", deadline).Delete(&model.Log{}).Error; err != nil {
+		logger.Error("删除旧日志失败", logger.F("error", err))
 		return fmt.Errorf("删除旧日志失败: %v", err)
 	}
 	return nil
@@ -82,6 +89,7 @@ func (s *logService) DeleteOldLogs(ctx context.Context, days int) error {
 
 func (s *logService) BatchCreateLogs(ctx context.Context, logs []*model.Log) error {
 	if err := database.GetDB().CreateInBatches(logs, 100).Error; err != nil {
+		logger.Error("批量创建日志失败", logger.F("error", err))
 		return fmt.Errorf("批量创建日志失败: %v", err)
 	}
 	return nil
@@ -93,6 +101,7 @@ func (s *logService) GetUserLoginHistory(ctx context.Context, userID uint64, lim
 		Order("created_at DESC").
 		Limit(limit).
 		Find(&logs).Error; err != nil {
+		logger.Error("查询登录历史失败", logger.F("error", err))
 		return nil, fmt.Errorf("查询登录历史失败: %v", err)
 	}
 	return logs, nil
@@ -106,6 +115,7 @@ func (s *logService) GetUserLastLogin(ctx context.Context, userID uint64) (*mode
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
+		logger.Error("查询上次登录信息失败", logger.F("error", err))
 		return nil, fmt.Errorf("查询上次登录信息失败: %v", err)
 	}
 	return &log, nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/yockii/dify_tools/internal/model"
+	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -41,6 +42,7 @@ func (s *applicationService) CheckDuplicate(record *model.Application) (bool, er
 	}
 	var count int64
 	if err := query.Count(&count).Error; err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
 		return false, err
 	}
 	return count > 0, nil
@@ -67,6 +69,7 @@ func (s *applicationService) GetByApiKey(ctx context.Context, apiKey string) (*m
 	var app model.Application
 	err := s.db.Where(&model.Application{APIKey: apiKey}).First(&app).Error
 	if err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
 		return nil, err
 	}
 	s.appMap[apiKey] = &app
@@ -84,6 +87,7 @@ func (s *applicationService) Create(ctx context.Context, record *model.Applicati
 	}
 
 	if err := s.db.Create(record).Error; err != nil {
+		logger.Error("创建记录失败", logger.F("error", err))
 		return fmt.Errorf("创建记录失败: %v", err)
 	}
 	return nil

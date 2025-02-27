@@ -8,7 +8,7 @@ type tableInfoService struct {
 
 func NewTableInfoService() *tableInfoService {
 	srv := new(tableInfoService)
-	srv.BaseServiceImpl = NewBaseService[*model.TableInfo](BaseServiceConfig[*model.TableInfo]{
+	srv.BaseServiceImpl = NewBaseService(BaseServiceConfig[*model.TableInfo]{
 		NewModel: srv.NewModel,
 	})
 	return srv

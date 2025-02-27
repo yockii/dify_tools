@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/tidwall/gjson"
+	"github.com/yockii/dify_tools/pkg/logger"
 )
 
 type KnowledgeBaseClient struct {
@@ -30,6 +31,7 @@ func NewKnowLedgeBaseClient(baseUrl, defaultAPISecret string) *KnowledgeBaseClie
 func (c *KnowledgeBaseClient) buildPostRequest(url string, body []byte) (*http.Request, error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
 		return nil, err
 	}
 
@@ -59,6 +61,7 @@ func (c *KnowledgeBaseClient) CreateDocumentByText(ID, docName, docContent strin
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
+		logger.Error("序列化请求参数失败", logger.F("err", err))
 		return "", err
 	}
 	req, err := c.buildPostRequest(c.baseUrl+"/datasets/"+ID+"/documents/create-by-text", bodyBytes)
@@ -67,11 +70,13 @@ func (c *KnowledgeBaseClient) CreateDocumentByText(ID, docName, docContent strin
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
 		return "", err
 	}
 	defer resp.Body.Close()
 	response, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
 		return "", err
 	}
 	respJson := gjson.ParseBytes(response)
@@ -84,14 +89,17 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader multipa
 	writer := multipart.NewWriter(fileBody)
 	part, err := writer.CreateFormFile("file", fileHeader.Filename)
 	if err != nil {
+		logger.Error("创建文件表单失败", logger.F("err", err))
 		return "", err
 	}
 	file, err := fileHeader.Open()
 	if err != nil {
+		logger.Error("打开文件失败", logger.F("err", err))
 		return "", err
 	}
 	_, err = io.Copy(part, file)
 	if err != nil {
+		logger.Error("写入文件上传流失败", logger.F("err", err))
 		return "", err
 	}
 	// data=json, file=upload
@@ -112,19 +120,23 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader multipa
 	// body json序列化后的字符串放入data字段
 	dataBytes, err := json.Marshal(body)
 	if err != nil {
+		logger.Error("序列化请求参数失败", logger.F("err", err))
 		return "", err
 	}
 	err = writer.WriteField("data", string(dataBytes))
 	if err != nil {
+		logger.Error("写入表单字段失败", logger.F("err", err))
 		return "", err
 	}
 	err = writer.Close()
 	if err != nil {
+		logger.Error("关闭表单失败", logger.F("err", err))
 		return "", err
 	}
 
 	req, err := http.NewRequest("POST", c.baseUrl+"/datasets/"+ID+"/documents/create-by-file", fileBody)
 	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
 		return "", err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -133,11 +145,13 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader multipa
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
 		return "", err
 	}
 	defer resp.Body.Close()
 	response, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
 		return "", err
 	}
 	respJson := gjson.ParseBytes(response)
@@ -155,6 +169,7 @@ func (c *KnowledgeBaseClient) CreateKnowledgeBase(name, description string) (str
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
+		logger.Error("序列化请求参数失败", logger.F("err", err))
 		return "", err
 	}
 	req, err := c.buildPostRequest(c.baseUrl+"/datasets", bodyBytes)
@@ -163,11 +178,13 @@ func (c *KnowledgeBaseClient) CreateKnowledgeBase(name, description string) (str
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
 		return "", err
 	}
 	defer resp.Body.Close()
 	response, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
 		return "", err
 	}
 	respJson := gjson.ParseBytes(response)
@@ -178,6 +195,7 @@ func (c *KnowledgeBaseClient) CreateKnowledgeBase(name, description string) (str
 func (c *KnowledgeBaseClient) DeleteKnowledgeBase(ID string) error {
 	req, err := http.NewRequest("DELETE", c.baseUrl+"/datasets/"+ID, nil)
 	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
 		return err
 	}
 	if c.defaultAPISecret != "" {
@@ -185,6 +203,7 @@ func (c *KnowledgeBaseClient) DeleteKnowledgeBase(ID string) error {
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
 		return err
 	}
 	defer resp.Body.Close()
@@ -197,6 +216,7 @@ func (c *KnowledgeBaseClient) DeleteKnowledgeBase(ID string) error {
 func (c *KnowledgeBaseClient) DocumentBatchIndexingStatus(ID, batchID string) (string, error) {
 	req, err := http.NewRequest("GET", c.baseUrl+"/datasets/"+ID+"/documents/"+batchID+"/indexing-status", nil)
 	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
 		return "", err
 	}
 	if c.defaultAPISecret != "" {
@@ -204,11 +224,13 @@ func (c *KnowledgeBaseClient) DocumentBatchIndexingStatus(ID, batchID string) (s
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
 		return "", err
 	}
 	defer resp.Body.Close()
 	response, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
 		return "", err
 	}
 	respJson := gjson.ParseBytes(response)

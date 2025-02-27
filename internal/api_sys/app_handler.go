@@ -77,6 +77,7 @@ func (h *AppHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Ha
 func (h *AppHandler) CreateApp(c *fiber.Ctx) error {
 	var app model.Application
 	if err := c.BodyParser(&app); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -84,7 +85,6 @@ func (h *AppHandler) CreateApp(c *fiber.Ctx) error {
 	app.APIKey = "ak-" + util.NewShortID()
 
 	if err := h.appService.Create(c.Context(), &app); err != nil {
-		logger.Error("创建应用失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 
@@ -103,6 +103,7 @@ func (h *AppHandler) CreateApp(c *fiber.Ctx) error {
 func (h *AppHandler) UpdateApp(c *fiber.Ctx) error {
 	var app model.Application
 	if err := c.BodyParser(&app); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
@@ -123,6 +124,7 @@ func (h *AppHandler) UpdateApp(c *fiber.Ctx) error {
 func (h *AppHandler) DeleteApp(c *fiber.Ctx) error {
 	var app model.Application
 	if err := c.BodyParser(&app); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
@@ -150,6 +152,7 @@ func (h *AppHandler) ListApps(c *fiber.Ctx) error {
 
 	var condition model.Application
 	if err := c.QueryParser(&condition); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -165,6 +168,7 @@ func (h *AppHandler) ListApps(c *fiber.Ctx) error {
 func (h *AppHandler) GetApp(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -186,6 +190,7 @@ func (h *AppHandler) GetApp(c *fiber.Ctx) error {
 func (h *AppHandler) CreateDataSource(c *fiber.Ctx) error {
 	var dataSource model.DataSource
 	if err := c.BodyParser(&dataSource); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
@@ -208,6 +213,7 @@ func (h *AppHandler) CreateDataSource(c *fiber.Ctx) error {
 func (h *AppHandler) UpdateDataSource(c *fiber.Ctx) error {
 	var dataSource model.DataSource
 	if err := c.BodyParser(&dataSource); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
@@ -226,6 +232,7 @@ func (h *AppHandler) UpdateDataSource(c *fiber.Ctx) error {
 func (h *AppHandler) DeleteDataSource(c *fiber.Ctx) error {
 	var dataSource model.DataSource
 	if err := c.BodyParser(&dataSource); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
@@ -250,6 +257,7 @@ func (h *AppHandler) ListDataSources(c *fiber.Ctx) error {
 
 	var condition model.DataSource
 	if err := c.QueryParser(&condition); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
@@ -265,6 +273,7 @@ func (h *AppHandler) ListDataSources(c *fiber.Ctx) error {
 func (h *AppHandler) GetDataSource(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -280,6 +289,7 @@ func (h *AppHandler) GetDataSource(c *fiber.Ctx) error {
 func (h *AppHandler) SyncDataSource(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -304,6 +314,7 @@ func (h *AppHandler) GetDataSourceTables(c *fiber.Ctx) error {
 
 	condition := new(model.TableInfo)
 	if err := c.QueryParser(condition); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 	if condition.DataSourceID == 0 {
@@ -322,6 +333,7 @@ func (h *AppHandler) GetDataSourceTables(c *fiber.Ctx) error {
 func (h *AppHandler) UpdateDataSourceTable(c *fiber.Ctx) error {
 	var table model.TableInfo
 	if err := c.BodyParser(&table); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
@@ -346,6 +358,7 @@ func (h *AppHandler) GetDataSourceColumns(c *fiber.Ctx) error {
 
 	condition := new(model.ColumnInfo)
 	if err := c.QueryParser(condition); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 	if condition.TableID == 0 {
@@ -364,6 +377,7 @@ func (h *AppHandler) GetDataSourceColumns(c *fiber.Ctx) error {
 func (h *AppHandler) UpdateDataSourceColumn(c *fiber.Ctx) error {
 	var column model.ColumnInfo
 	if err := c.BodyParser(&column); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 

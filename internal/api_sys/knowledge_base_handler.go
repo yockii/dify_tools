@@ -5,6 +5,7 @@ import (
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
+	"github.com/yockii/dify_tools/pkg/logger"
 )
 
 type KnowledgeBaseHandler struct {
@@ -33,6 +34,7 @@ func (h *KnowledgeBaseHandler) RegisterRoutes(router fiber.Router, authMiddlewar
 func (h *KnowledgeBaseHandler) CreateKnowledgeBase(c *fiber.Ctx) error {
 	var record model.KnowledgeBase
 	if err := c.BodyParser(&record); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -50,6 +52,7 @@ func (h *KnowledgeBaseHandler) CreateKnowledgeBase(c *fiber.Ctx) error {
 func (h *KnowledgeBaseHandler) DeleteKnowledgeBase(c *fiber.Ctx) error {
 	var record model.KnowledgeBase
 	if err := c.BodyParser(&record); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if record.ID == 0 {
@@ -70,6 +73,7 @@ func (h *KnowledgeBaseHandler) GetKnowledgeBaseList(c *fiber.Ctx) error {
 
 	var condition model.KnowledgeBase
 	if err := c.QueryParser(&condition); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 

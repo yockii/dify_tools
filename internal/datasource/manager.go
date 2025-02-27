@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/yockii/dify_tools/internal/model"
+	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -39,6 +40,7 @@ func createNewConnection(ds *model.DataSource) (*gorm.DB, error) {
 			ds.User, ds.Password, ds.Host, ds.Port, ds.Database)
 		db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 		if err != nil {
+			logger.Error("创建 MySQL 连接失败", logger.F("err", err))
 			return nil, err
 		}
 		return db, nil
@@ -48,9 +50,11 @@ func createNewConnection(ds *model.DataSource) (*gorm.DB, error) {
 			ds.Host, ds.Port, ds.User, ds.Password, ds.Database)
 		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
+			logger.Error("创建 Postgres 连接失败", logger.F("err", err))
 			return nil, err
 		}
 		return db, nil
 	}
+	logger.Warn("不支持的数据库类型", logger.F("type", ds.Type))
 	return nil, fmt.Errorf("unsupported database type: %s", ds.Type)
 }

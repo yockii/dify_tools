@@ -7,6 +7,7 @@ import (
 
 	"github.com/yockii/dify_tools/internal/datasource"
 	"github.com/yockii/dify_tools/internal/model"
+	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -40,6 +41,7 @@ func (s *dataSourceService) CheckDuplicate(record *model.DataSource) (bool, erro
 	}
 	var count int64
 	if err := query.Count(&count).Error; err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
 		return false, err
 	}
 	return count > 0, nil
@@ -72,6 +74,7 @@ func (s *dataSourceService) Delete(ctx context.Context, id uint64) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("记录不存在")
 		}
+		logger.Error("查询记录失败", logger.F("error", err))
 		return fmt.Errorf("查询记录失败: %v", err)
 	}
 	// 检查是否可以删除
@@ -82,18 +85,21 @@ func (s *dataSourceService) Delete(ctx context.Context, id uint64) error {
 	// 删除记录
 	if err := s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&record).Error; err != nil {
+			logger.Error("删除记录失败", logger.F("error", err))
 			return fmt.Errorf("删除记录失败: %v", err)
 		}
 		// 删除表信息
 		if err := tx.Where(&model.TableInfo{
 			DataSourceID: record.ID,
 		}).Delete(&model.TableInfo{}).Error; err != nil {
+			logger.Error("删除表信息失败", logger.F("error", err))
 			return fmt.Errorf("删除表信息失败: %v", err)
 		}
 		// 删除字段信息
 		if err := tx.Where(&model.ColumnInfo{
 			DataSourceID: record.ID,
 		}).Delete(&model.ColumnInfo{}).Error; err != nil {
+			logger.Error("删除字段信息失败", logger.F("error", err))
 			return fmt.Errorf("删除字段信息失败: %v", err)
 		}
 		return nil
@@ -110,6 +116,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("数据源不存在")
 		}
+		logger.Error("查询数据源失败", logger.F("error", err))
 		return fmt.Errorf("查询数据源失败: %v", err)
 	}
 
@@ -133,6 +140,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 		err = fmt.Errorf("unsupported database type: %s", dataSource.Type)
 	}
 	if err != nil {
+		logger.Error("查询表信息失败", logger.F("error", err))
 		return fmt.Errorf("查询表信息失败: %v", err)
 	}
 
@@ -149,21 +157,30 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		err := tx.Create(&tableInfos).Error
 		if err != nil {
+			logger.Error("创建表信息失败", logger.F("error", err))
 			return fmt.Errorf("创建表信息失败: %v", err)
 		}
 
 		for _, table := range tableInfos {
-			// 查询表信息
-			var tableInfo model.TableInfo
-			if err := tx.First(&tableInfo, "data_source_id = ? AND name = ?", dataSource.ID, table.Name).Error; err != nil {
-				return fmt.Errorf("查询表信息失败: %v", err)
+			if err := tx.Where(&model.TableInfo{
+				DataSourceID: dataSource.ID,
+				Name:         table.Name,
+			}).Assign(table).FirstOrCreate(table).Error; err != nil {
+				logger.Error("同步表信息失败", logger.F("error", err))
+				return fmt.Errorf("同步表信息失败: %v", err)
 			}
-			if tableInfo.ID == 0 {
-				tx.Create(table)
-			} else {
-				tx.Model(&tableInfo).Updates(table)
-				table.ID = tableInfo.ID
-			}
+			// // 查询表信息
+			// var tableInfo model.TableInfo
+			// if err := tx.First(&tableInfo, "data_source_id = ? AND name = ?", dataSource.ID, table.Name).Error; err != nil {
+			// 	logger.Error("查询表信息失败", logger.F("error", err))
+			// 	return fmt.Errorf("查询表信息失败: %v", err)
+			// }
+			// if tableInfo.ID == 0 {
+			// 	tx.Create(table)
+			// } else {
+			// 	tx.Model(&tableInfo).Updates(table)
+			// 	table.ID = tableInfo.ID
+			// }
 		}
 
 		migrator := db.Migrator()
@@ -171,6 +188,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 		for _, table := range tableInfos {
 			ct, err := migrator.ColumnTypes(table.Name)
 			if err != nil {
+				logger.Error("查询列信息失败", logger.F("error", err))
 				return fmt.Errorf("查询列信息失败: %v", err)
 			}
 			for _, c := range ct {
@@ -203,6 +221,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 				TableID:      column.TableID,
 				Name:         column.Name,
 			}).Assign(column).FirstOrCreate(column).Error; err != nil {
+				logger.Error("同步字段信息失败", logger.F("error", err))
 				return fmt.Errorf("同步字段信息失败: %v", err)
 			}
 		}

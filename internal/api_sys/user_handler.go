@@ -8,6 +8,7 @@ import (
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
+	"github.com/yockii/dify_tools/pkg/logger"
 )
 
 type UserHandler struct {
@@ -82,6 +83,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 		Password string `json:"password"`
 	}
 	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	uid, token, err := h.authService.Login(c.Context(), req.Username, req.Password)
@@ -144,6 +146,7 @@ func (h *UserHandler) getProfile(c *fiber.Ctx) error {
 func (h *UserHandler) createUser(c *fiber.Ctx) error {
 	var user model.User
 	if err := c.BodyParser(&user); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -162,6 +165,7 @@ func (h *UserHandler) createUser(c *fiber.Ctx) error {
 func (h *UserHandler) updateUser(c *fiber.Ctx) error {
 	var user model.User
 	if err := c.BodyParser(&user); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if user.ID == 0 {
@@ -183,6 +187,7 @@ func (h *UserHandler) updateUser(c *fiber.Ctx) error {
 func (h *UserHandler) deleteUser(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -201,6 +206,7 @@ func (h *UserHandler) deleteUser(c *fiber.Ctx) error {
 func (h *UserHandler) getUser(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -221,6 +227,7 @@ func (h *UserHandler) listUsers(c *fiber.Ctx) error {
 	}
 	condition := new(model.User)
 	if err := c.QueryParser(condition); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -241,6 +248,7 @@ func (h *UserHandler) updatePassword(c *fiber.Ctx) error {
 		NewPassword string `json:"newPassword"`
 	}
 	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -261,6 +269,7 @@ func (h *UserHandler) updateStatus(c *fiber.Ctx) error {
 		Status int    `json:"status"`
 	}
 	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -285,6 +294,7 @@ func (h *UserHandler) updateStatus(c *fiber.Ctx) error {
 func (h *UserHandler) createRole(c *fiber.Ctx) error {
 	var role model.Role
 	if err := c.BodyParser(&role); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -303,6 +313,7 @@ func (h *UserHandler) createRole(c *fiber.Ctx) error {
 func (h *UserHandler) updateRole(c *fiber.Ctx) error {
 	var role model.Role
 	if err := c.BodyParser(&role); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -325,6 +336,7 @@ func (h *UserHandler) updateRole(c *fiber.Ctx) error {
 func (h *UserHandler) deleteRole(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -343,6 +355,7 @@ func (h *UserHandler) deleteRole(c *fiber.Ctx) error {
 func (h *UserHandler) getRole(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Query("id"), 10, 64)
 	if err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -364,6 +377,7 @@ func (h *UserHandler) listRoles(c *fiber.Ctx) error {
 
 	condition := new(model.Role)
 	if err := c.QueryParser(condition); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -409,6 +423,7 @@ func (h *UserHandler) listLogs(c *fiber.Ctx) error {
 func (h *UserHandler) getUserLogs(c *fiber.Ctx) error {
 	userID, err := strconv.ParseUint(c.Query("userId"), 10, 64)
 	if err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 

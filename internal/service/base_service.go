@@ -8,6 +8,7 @@ import (
 
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/database"
+	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
 )
 
@@ -96,6 +97,7 @@ func (s *BaseServiceImpl[T]) Create(ctx context.Context, record T) error {
 	}
 
 	if err := s.db.Create(record).Error; err != nil {
+		logger.Error("创建记录失败", logger.F("error", err))
 		return fmt.Errorf("创建记录失败: %v", err)
 	}
 	return nil
@@ -113,6 +115,7 @@ func (s *BaseServiceImpl[T]) Update(ctx context.Context, record T) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("记录不存在")
 		}
+		logger.Error("查询记录失败", logger.F("error", err))
 		return fmt.Errorf("查询记录失败: %v", err)
 	}
 
@@ -125,6 +128,7 @@ func (s *BaseServiceImpl[T]) Update(ctx context.Context, record T) error {
 
 	// 更新记录
 	if err := s.db.Model(record).Updates(record).Error; err != nil {
+		logger.Error("更新记录失败", logger.F("error", err))
 		return fmt.Errorf("更新记录失败: %v", err)
 	}
 
@@ -141,6 +145,7 @@ func (s *BaseServiceImpl[T]) Delete(ctx context.Context, id uint64) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("记录不存在")
 		}
+		logger.Error("查询记录失败", logger.F("error", err))
 		return fmt.Errorf("查询记录失败: %v", err)
 	}
 
@@ -151,6 +156,7 @@ func (s *BaseServiceImpl[T]) Delete(ctx context.Context, id uint64) error {
 
 	// 删除记录
 	if err := s.db.Delete(record).Error; err != nil {
+		logger.Error("删除记录失败", logger.F("error", err))
 		return fmt.Errorf("删除记录失败: %v", err)
 	}
 
@@ -171,6 +177,7 @@ func (s *BaseServiceImpl[T]) Get(ctx context.Context, id uint64) (T, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return record, fmt.Errorf("记录不存在")
 		}
+		logger.Error("查询记录失败", logger.F("error", err))
 		return record, fmt.Errorf("查询记录失败: %v", err)
 	}
 	if s.config.CacheHook != nil {
@@ -198,12 +205,16 @@ func (s *BaseServiceImpl[T]) List(ctx context.Context, condition T, offset, limi
 	}
 	// 查询记录总数
 	if err := query.Count(&total).Error; err != nil {
+		logger.Error("查询记录总数失败", logger.F("error", err))
 		return records, 0, fmt.Errorf("查询记录总数失败: %v", err)
 	}
 
-	// 查询记录列表
-	if err := query.Offset(offset).Limit(limit).Order(s.BaseListOrder()).Find(&records).Error; err != nil {
-		return records, 0, fmt.Errorf("查询记录失败: %v", err)
+	if total > 0 && limit > 0 {
+		// 查询记录列表
+		if err := query.Offset(offset).Limit(limit).Order(s.BaseListOrder()).Find(&records).Error; err != nil {
+			logger.Error("查询记录失败", logger.F("error", err))
+			return records, 0, fmt.Errorf("查询记录失败: %v", err)
+		}
 	}
 
 	return records, total, nil

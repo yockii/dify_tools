@@ -13,3 +13,7 @@ func NewTableInfoService() *tableInfoService {
 	})
 	return srv
 }
+
+func (s *tableInfoService) NewModel() *model.TableInfo {
+	return &model.TableInfo{}
+}

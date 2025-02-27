@@ -16,7 +16,7 @@ type dataSourceService struct {
 
 func NewDataSourceService() *dataSourceService {
 	srv := new(dataSourceService)
-	srv.BaseServiceImpl = NewBaseService[*model.DataSource](BaseServiceConfig[*model.DataSource]{
+	srv.BaseServiceImpl = NewBaseService(BaseServiceConfig[*model.DataSource]{
 		NewModel:        srv.NewModel,
 		CheckDuplicate:  srv.CheckDuplicate,
 		DeleteCheck:     srv.DeleteCheck,

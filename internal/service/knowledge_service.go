@@ -1,16 +1,12 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
-	"github.com/tidwall/gjson"
 	"github.com/yockii/dify_tools/internal/constant"
+	"github.com/yockii/dify_tools/internal/dify"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/logger"
 	"github.com/yockii/dify_tools/pkg/util"
@@ -91,12 +87,12 @@ func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.
 	if knowledgeBase.ApplicationID == 0 {
 		return fmt.Errorf("应用ID不能为空")
 	}
+	app, err := s.applicationService.Get(ctx, knowledgeBase.ApplicationID)
+	if err != nil {
+		logger.Error("获取应用失败", logger.F("err", err))
+		return err
+	}
 	if knowledgeBase.KnowledgeBaseName == "" {
-		app, err := s.applicationService.Get(ctx, knowledgeBase.ApplicationID)
-		if err != nil {
-			logger.Error("获取应用失败", logger.F("err", err))
-			return err
-		}
 		knowledgeBase.KnowledgeBaseName = fmt.Sprintf("%s知识库-%s", app.Name, util.NewShortID())
 	} else if !strings.Contains(knowledgeBase.KnowledgeBaseName, "-") {
 		knowledgeBase.KnowledgeBaseName += "-" + util.NewShortID()
@@ -124,46 +120,12 @@ func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.
 	}
 	difyDatasetsToken := difyDatasetsTokenDict.Value
 
-	// 构建body的json
-	body := map[string]string{
-		"name":               knowledgeBase.KnowledgeBaseName,
-		"description":        "",
-		"indexing_technique": "high_quality",
-		"permission":         "all_team_members",
-		"provider":           "vendor",
-	}
-	bodyJson, err := json.Marshal(body)
+	id, err := dify.NewKnowLedgeBaseClient(difyBaseUrl, difyDatasetsToken).CreateKnowledgeBase(knowledgeBase.KnowledgeBaseName, app.Name)
 	if err != nil {
-		logger.Error("构建dify接口请求body失败", logger.F("err", err))
+		logger.Error("创建知识库失败", logger.F("err", err))
 		return err
 	}
-
-	httpClient := http.Client{}
-	req, err := http.NewRequest("POST", difyBaseUrl+"/datasets", bytes.NewReader(bodyJson))
-	if err != nil {
-		logger.Error("构建dify接口请求失败", logger.F("err", err))
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+difyDatasetsToken)
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		logger.Error("调用dify接口失败", logger.F("err", err))
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("dify接口返回错误：%d", resp.StatusCode)
-		logger.Error("调用dify接口失败", logger.F("err", err))
-	}
-
-	// 解析返回结果,只关注返回json中的id
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Error("读取dify接口返回body失败", logger.F("err", err))
-		return err
-	}
-	response := gjson.ParseBytes(respBody)
-	knowledgeBase.OuterID = response.Get("id").String()
+	knowledgeBase.OuterID = id
 
 	if err := s.Create(ctx, knowledgeBase); err != nil {
 		logger.Error("创建知识库失败", logger.F("err", err))
@@ -205,6 +167,7 @@ func (s *knowledgeBaseService) DeleteByApplicationID(ctx context.Context, applic
 	}
 	difyDatasetsToken := difyDatasetsTokenDict.Value
 
+	difyKnowledgeBaseClient := dify.NewKnowLedgeBaseClient(difyBaseUrl, difyDatasetsToken)
 	// 循环删除每个知识库
 	for _, knowledgeBase := range knowledgeBaseList {
 		// 调用dify删除知识库
@@ -212,23 +175,9 @@ func (s *knowledgeBaseService) DeleteByApplicationID(ctx context.Context, applic
 			logger.Error("知识库外部ID为空，忽略", logger.F("knowledgeBase", knowledgeBase))
 			continue
 		}
-		httpClient := http.Client{}
-		req, err := http.NewRequest("DELETE", difyBaseUrl+"/datasets/"+knowledgeBase.OuterID, nil)
+		err = difyKnowledgeBaseClient.DeleteKnowledgeBase(knowledgeBase.OuterID)
 		if err != nil {
-			logger.Error("构建dify接口请求失败", logger.F("err", err))
-			return err
-		}
-		req.Header.Set("Authorization", "Bearer "+difyDatasetsToken)
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			logger.Error("调用dify接口失败", logger.F("err", err))
-			return err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-			err = fmt.Errorf("dify接口返回错误：%d", resp.StatusCode)
-			logger.Error("调用dify接口失败", logger.F("err", err))
+			logger.Error("删除知识库失败", logger.F("err", err))
 			continue
 		}
 		// 删除知识库

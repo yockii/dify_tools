@@ -189,6 +189,10 @@ func (h *AppHandler) CreateDataSource(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
 	}
 
+	if dataSource.ApplicationID == 0 || dataSource.Name == "" || dataSource.Host == "" || dataSource.Port == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
 	if err := h.dataSourceService.Create(c.Context(), &dataSource); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}

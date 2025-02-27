@@ -38,7 +38,14 @@ func NewBaseService[T model.Model](
 	}
 }
 
-func (s *BaseServiceImpl[T]) NewModel() T {
+func (s *BaseServiceImpl[T]) BaseCheckDuplicate(record T) (bool, error) {
+	if s.config.CheckDuplicate != nil {
+		return s.config.CheckDuplicate(record)
+	}
+	return false, nil
+}
+
+func (s *BaseServiceImpl[T]) BaseNewModel() T {
 	if s.config.NewModel != nil {
 		return s.config.NewModel()
 	}
@@ -57,24 +64,35 @@ func (s *BaseServiceImpl[T]) NewModel() T {
 	return reflect.New(tType).Elem().Interface().(T)
 }
 
-func (s *BaseServiceImpl[T]) ListOrder() string {
+func (s *BaseServiceImpl[T]) BaseListOrder() string {
 	if s.config.ListOrder != nil {
 		return s.config.ListOrder()
 	}
 	return "created_at DESC"
 }
 
+func (s *BaseServiceImpl[T]) BaseDeleteCheck(record T) error {
+	if s.config.DeleteCheck != nil {
+		return s.config.DeleteCheck(record)
+	}
+	return nil
+}
+
+func (s *BaseServiceImpl[T]) BaseDeleteHook(ctx context.Context, record T) {
+	if s.config.DeleteHook != nil {
+		s.config.DeleteHook(ctx, record)
+	}
+}
+
+////////////////////////////////////////////////
+
 // Create 创建记录
 func (s *BaseServiceImpl[T]) Create(ctx context.Context, record T) error {
 	// 检查是否重复
-	if s.config.CheckDuplicate != nil {
-		duplicate, err := s.config.CheckDuplicate(record)
-		if err != nil {
-			return err
-		}
-		if duplicate {
-			return fmt.Errorf("记录已存在")
-		}
+	if duplicate, err := s.BaseCheckDuplicate(record); err != nil {
+		return err
+	} else if duplicate {
+		return fmt.Errorf("记录已存在")
 	}
 
 	if err := s.db.Create(record).Error; err != nil {
@@ -99,14 +117,10 @@ func (s *BaseServiceImpl[T]) Update(ctx context.Context, record T) error {
 	}
 
 	// 检查是否重复
-	if s.config.CheckDuplicate != nil {
-		duplicate, err := s.config.CheckDuplicate(record)
-		if err != nil {
-			return err
-		}
-		if duplicate {
-			return fmt.Errorf("记录已存在")
-		}
+	if duplicate, err := s.BaseCheckDuplicate(record); err != nil {
+		return err
+	} else if duplicate {
+		return fmt.Errorf("记录已存在")
 	}
 
 	// 更新记录
@@ -131,10 +145,8 @@ func (s *BaseServiceImpl[T]) Delete(ctx context.Context, id uint64) error {
 	}
 
 	// 检查是否可以删除
-	if s.config.DeleteCheck != nil {
-		if err := s.config.DeleteCheck(record); err != nil {
-			return err
-		}
+	if err := s.BaseDeleteCheck(record); err != nil {
+		return err
 	}
 
 	// 删除记录
@@ -142,9 +154,8 @@ func (s *BaseServiceImpl[T]) Delete(ctx context.Context, id uint64) error {
 		return fmt.Errorf("删除记录失败: %v", err)
 	}
 
-	if s.config.DeleteHook != nil {
-		s.config.DeleteHook(ctx, record)
-	}
+	s.BaseDeleteHook(ctx, record)
+
 	return nil
 }
 
@@ -173,7 +184,7 @@ func (s *BaseServiceImpl[T]) List(ctx context.Context, condition T, offset, limi
 	var records []T
 	var total int64
 
-	query := s.db.Model(s.NewModel())
+	query := s.db.Model(s.BaseNewModel())
 
 	if s.config.ListOmitColumns != nil {
 		if omits := s.config.ListOmitColumns(); len(omits) > 0 {
@@ -191,7 +202,7 @@ func (s *BaseServiceImpl[T]) List(ctx context.Context, condition T, offset, limi
 	}
 
 	// 查询记录列表
-	if err := query.Offset(offset).Limit(limit).Order(s.ListOrder()).Find(&records).Error; err != nil {
+	if err := query.Offset(offset).Limit(limit).Order(s.BaseListOrder()).Find(&records).Error; err != nil {
 		return records, 0, fmt.Errorf("查询记录失败: %v", err)
 	}
 

@@ -63,9 +63,10 @@ func (h *AppHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Ha
 		dataSources.Get("/sync", h.SyncDataSource)
 		dataSources.Get("/tables", h.GetDataSourceTables)
 		dataSources.Post("/update_table", h.UpdateDataSourceTable)
+		dataSources.Post("/delete_table", h.DeleteDataSourceTable)
 		dataSources.Get("/columns", h.GetDataSourceColumns)
 		dataSources.Post("/update_column", h.UpdateDataSourceColumn)
-
+		dataSources.Post("/delete_column", h.DeleteDataSourceColumn)
 	}
 }
 
@@ -373,6 +374,29 @@ func (h *AppHandler) GetDataSourceColumns(c *fiber.Ctx) error {
 	return c.JSON(service.OK(service.NewListResponse(columns, total, offset, limit)))
 }
 
+// DeleteDataSourceTable 删除数据源表
+func (h *AppHandler) DeleteDataSourceTable(c *fiber.Ctx) error {
+	var table model.TableInfo
+	if err := c.BodyParser(&table); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+	}
+
+	if table.ID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if err := h.tableInfoService.Delete(c.Context(), table.ID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+
+	// 记录操作日志
+	user := c.Locals("user").(*model.User)
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionDeleteTableInfo, c.IP(), c.Get("User-Agent"))
+
+	return c.JSON(service.OK(nil))
+}
+
 // UpdateDataSourceColumn 更新数据源表列
 func (h *AppHandler) UpdateDataSourceColumn(c *fiber.Ctx) error {
 	var column model.ColumnInfo
@@ -390,6 +414,29 @@ func (h *AppHandler) UpdateDataSourceColumn(c *fiber.Ctx) error {
 	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionUpdateColumnInfo, c.IP(), c.Get("User-Agent"))
 
 	return c.JSON(service.OK(column))
+}
+
+// DeleteDataSourceColumn 删除数据源表列
+func (h *AppHandler) DeleteDataSourceColumn(c *fiber.Ctx) error {
+	var column model.ColumnInfo
+	if err := c.BodyParser(&column); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+	}
+
+	if column.ID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if err := h.columnInfoService.Delete(c.Context(), column.ID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+
+	// 记录操作日志
+	user := c.Locals("user").(*model.User)
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionDeleteColumnInfo, c.IP(), c.Get("User-Agent"))
+
+	return c.JSON(service.OK(nil))
 }
 
 //endregion

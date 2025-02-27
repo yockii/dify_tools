@@ -221,6 +221,8 @@ func InitData(db *gorm.DB) error {
 					{Name: "同步数据源", Value: 44, Code: "log_action_sync_data_source"},
 					{Name: "修改表信息", Value: 45, Code: "log_action_update_table_info"},
 					{Name: "修改列信息", Value: 46, Code: "log_action_update_column_info"},
+					{Name: "删除表信息", Value: 47, Code: "log_action_delete_table_info"},
+					{Name: "删除列信息", Value: 48, Code: "log_action_delete_column_info"},
 					{Name: "创建字典", Value: 51, Code: "log_action_create_dict"},
 					{Name: "编辑字典", Value: 52, Code: "log_action_update_dict"},
 					{Name: "删除字典", Value: 53, Code: "log_action_delete_dict"},

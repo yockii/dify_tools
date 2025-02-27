@@ -30,6 +30,8 @@ const (
 	LogActionSyncDataSource
 	LogActionUpdateTableInfo
 	LogActionUpdateColumnInfo
+	LogActionDeleteTableInfo
+	LogActionDeleteColumnInfo
 )
 
 const (

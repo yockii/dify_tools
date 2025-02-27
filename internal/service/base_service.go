@@ -69,7 +69,7 @@ func (s *BaseServiceImpl[T]) BaseListOrder() string {
 	if s.config.ListOrder != nil {
 		return s.config.ListOrder()
 	}
-	return "created_at DESC"
+	return "created_at DESC, id DESC"
 }
 
 func (s *BaseServiceImpl[T]) BaseDeleteCheck(record T) error {
@@ -211,7 +211,7 @@ func (s *BaseServiceImpl[T]) List(ctx context.Context, condition T, offset, limi
 
 	if total > 0 && limit > 0 {
 		// 查询记录列表
-		if err := query.Offset(offset).Limit(limit).Order(s.BaseListOrder()).Find(&records).Error; err != nil {
+		if err := query.Order(s.BaseListOrder()).Offset(offset).Limit(limit).Find(&records).Error; err != nil {
 			logger.Error("查询记录失败", logger.F("error", err))
 			return records, 0, fmt.Errorf("查询记录失败: %v", err)
 		}

@@ -6,13 +6,18 @@ import (
 )
 
 type columnInfoService struct {
-	*BaseService[*model.ColumnInfo]
+	*BaseServiceImpl[*model.ColumnInfo]
 }
 
 func NewColumnInfoService() *columnInfoService {
-	return &columnInfoService{
-		NewBaseService[*model.ColumnInfo](),
-	}
+	srv := new(columnInfoService)
+	srv.BaseServiceImpl = NewBaseService[*model.ColumnInfo](BaseServiceConfig[*model.ColumnInfo]{
+		NewModel:       srv.NewModel,
+		CheckDuplicate: srv.CheckDuplicate,
+		DeleteCheck:    srv.DeleteCheck,
+		BuildCondition: srv.BuildCondition,
+	})
+	return srv
 }
 
 func (s *columnInfoService) NewModel() *model.ColumnInfo {

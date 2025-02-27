@@ -9,13 +9,18 @@ import (
 )
 
 type userService struct {
-	*BaseService[*model.User]
+	*BaseServiceImpl[*model.User]
 }
 
 func NewUserService() *userService {
-	return &userService{
-		NewBaseService[*model.User](),
-	}
+	srv := new(userService)
+	srv.BaseServiceImpl = NewBaseService[*model.User](BaseServiceConfig[*model.User]{
+		NewModel:       srv.NewModel,
+		CheckDuplicate: srv.CheckDuplicate,
+		BuildCondition: srv.BuildCondition,
+		ListOrder:      srv.ListOrder,
+	})
+	return srv
 }
 
 func (s *userService) NewModel() *model.User {

@@ -103,7 +103,7 @@ func (s *Server) setupServices() {
 
 	s.dictSrc = service.NewDictService()
 
-	s.knowledgeBaseSrv = service.NewKnowledgeBaseService(s.dictSrc)
+	s.knowledgeBaseSrv = service.NewKnowledgeBaseService(s.dictSrc, s.applicationSrv)
 }
 
 // setupMiddleware 配置中间件

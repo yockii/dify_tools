@@ -13,21 +13,21 @@ const (
 	MaxPageSize     = 100
 )
 
-type DictService interface {
-	Create(ctx context.Context, record *model.Dict) error
-	Update(ctx context.Context, record *model.Dict) error
+type BaseService[T model.Model] interface {
+	Create(ctx context.Context, record T) error
+	Update(ctx context.Context, record T) error
 	Delete(ctx context.Context, id uint64) error
-	Get(ctx context.Context, id uint64) (*model.Dict, error)
-	List(ctx context.Context, condition *model.Dict, offset, limit int) ([]*model.Dict, int64, error)
+	Get(ctx context.Context, id uint64) (T, error)
+	List(ctx context.Context, condition T, offset, limit int) ([]T, int64, error)
+}
+
+type DictService interface {
+	BaseService[*model.Dict]
 	GetByCode(ctx context.Context, code string) (*model.Dict, error)
 }
 
 type UserService interface {
-	Create(ctx context.Context, user *model.User) error
-	Update(ctx context.Context, user *model.User) error
-	Delete(ctx context.Context, id uint64) error
-	Get(ctx context.Context, id uint64) (*model.User, error)
-	List(ctx context.Context, condition *model.User, offset, limit int) ([]*model.User, int64, error)
+	BaseService[*model.User]
 	UpdatePassword(ctx context.Context, id uint64, oldPassword, newPassword string) error
 	UpdateStatus(ctx context.Context, id uint64, status int) error
 	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
@@ -41,11 +41,7 @@ type AuthService interface {
 }
 
 type RoleService interface {
-	Create(ctx context.Context, role *model.Role) error
-	Update(ctx context.Context, role *model.Role) error
-	Delete(ctx context.Context, id uint64) error
-	Get(ctx context.Context, id uint64) (*model.Role, error)
-	List(ctx context.Context, condition *model.Role, offset, limit int) ([]*model.Role, int64, error)
+	BaseService[*model.Role]
 }
 
 type LogService interface {
@@ -79,38 +75,26 @@ type SessionService interface {
 }
 
 type ApplicationService interface {
-	Create(ctx context.Context, record *model.Application) error
-	Update(ctx context.Context, record *model.Application) error
-	Delete(ctx context.Context, id uint64) error
-	Get(ctx context.Context, id uint64) (*model.Application, error)
-	List(ctx context.Context, condition *model.Application, offset, limit int) ([]*model.Application, int64, error)
-
+	BaseService[*model.Application]
 	GetByApiKey(ctx context.Context, apiKey string) (*model.Application, error)
 }
 
 type DataSourceService interface {
-	Create(ctx context.Context, record *model.DataSource) error
-	Update(ctx context.Context, record *model.DataSource) error
-	Delete(ctx context.Context, id uint64) error
-	Get(ctx context.Context, id uint64) (*model.DataSource, error)
-	List(ctx context.Context, condition *model.DataSource, offset, limit int) ([]*model.DataSource, int64, error)
+	BaseService[*model.DataSource]
 	Sync(ctx context.Context, id uint64) error
 }
 
 type TableInfoService interface {
-	Update(ctx context.Context, record *model.TableInfo) error
-	List(ctx context.Context, condition *model.TableInfo, offset, limit int) ([]*model.TableInfo, int64, error)
+	BaseService[*model.TableInfo]
 }
 
 type ColumnInfoService interface {
-	Update(ctx context.Context, record *model.ColumnInfo) error
-	List(ctx context.Context, condition *model.ColumnInfo, offset, limit int) ([]*model.ColumnInfo, int64, error)
+	BaseService[*model.ColumnInfo]
 }
 
 type KnowledgeBaseService interface {
-	CreateKnowledgeBase(ctx context.Context, knowledgeBase *model.KnowledgeBase) error
-	Delete(ctx context.Context, id uint64) error
-	List(ctx context.Context, condition *model.KnowledgeBase, offset, limit int) ([]*model.KnowledgeBase, int64, error)
+	BaseService[*model.KnowledgeBase]
+	DeleteByApplicationID(ctx context.Context, applicationID uint64) error
 }
 
 // /////////////////////////////

@@ -226,12 +226,48 @@ func InitData(db *gorm.DB) error {
 					{Name: "删除字典", Value: 53, Code: "log_action_delete_dict"},
 				}
 				for _, log := range logMap {
-					if err := tx.Model(&Dict{
+					if err := tx.Where(&Dict{
 						Code:     log.Code,
 						ParentID: logTypeDict.ID,
 					}).Attrs(&Dict{
 						Name:  log.Name,
 						Value: fmt.Sprintf("%d", log.Value),
+						Sort:  0,
+					}).FirstOrCreate(&Dict{}).Error; err != nil {
+						return fmt.Errorf("create dict failed: %v", err)
+					}
+				}
+			}
+
+			// 数据源类型
+			datasourceTypeDict := &Dict{
+				Name:     "数据源类型",
+				Code:     constant.DictTypeCodeDatasourceType,
+				Value:    "数据源类型",
+				ParentID: 0,
+				Sort:     0,
+			}
+			if err := tx.Model(&Dict{}).Where(&Dict{
+				Code: datasourceTypeDict.Code,
+			}).Attrs(datasourceTypeDict).FirstOrCreate(datasourceTypeDict).Error; err != nil {
+				return fmt.Errorf("create dict failed: %v", err)
+			}
+			{
+				datasourceMap := []struct {
+					Name  string
+					Value string
+					Code  string
+				}{
+					{Name: "MySQL", Value: "mysql", Code: "datasource_type_mysql"},
+					{Name: "PostgreSQL", Value: "postgres", Code: "datasource_type_postgresql"},
+				}
+				for _, ds := range datasourceMap {
+					if err := tx.Where(&Dict{
+						Code:     ds.Code,
+						ParentID: datasourceTypeDict.ID,
+					}).Attrs(&Dict{
+						Name:  ds.Name,
+						Value: ds.Value,
 						Sort:  0,
 					}).FirstOrCreate(&Dict{}).Error; err != nil {
 						return fmt.Errorf("create dict failed: %v", err)

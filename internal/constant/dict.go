@@ -1,8 +1,9 @@
 package constant
 
 const (
-	DictTypeCodeLogType = "log_type"
-	DictTypeCodeDify    = "dify"
+	DictTypeCodeLogType        = "log_type"
+	DictTypeCodeDify           = "dify"
+	DictTypeCodeDatasourceType = "datasource_type"
 )
 
 const (

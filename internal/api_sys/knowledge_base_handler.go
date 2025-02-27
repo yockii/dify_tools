@@ -25,8 +25,8 @@ func (h *KnowledgeBaseHandler) RegisterRoutes(router fiber.Router, authMiddlewar
 	knowledgeBaseRouter.Use(authMiddleware)
 	{
 		knowledgeBaseRouter.Post("/new", h.CreateKnowledgeBase)
-		knowledgeBaseRouter.Post("/delete", h.DeleteKnowledgeBase)
 		knowledgeBaseRouter.Get("/list", h.GetKnowledgeBaseList)
+		// knowledgeBaseRouter.Post("/delete", h.DeleteKnowledgeBase)
 	}
 }
 
@@ -40,7 +40,7 @@ func (h *KnowledgeBaseHandler) CreateKnowledgeBase(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
-	if err := h.knowledgeService.CreateKnowledgeBase(c.Context(), &record); err != nil {
+	if err := h.knowledgeService.Create(c.Context(), &record); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 
@@ -70,6 +70,10 @@ func (h *KnowledgeBaseHandler) GetKnowledgeBaseList(c *fiber.Ctx) error {
 
 	var condition model.KnowledgeBase
 	if err := c.QueryParser(&condition); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if condition.ApplicationID == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 

@@ -3,11 +3,13 @@ package service
 import "github.com/yockii/dify_tools/internal/model"
 
 type tableInfoService struct {
-	*BaseService[*model.TableInfo]
+	*BaseServiceImpl[*model.TableInfo]
 }
 
 func NewTableInfoService() *tableInfoService {
-	return &tableInfoService{
-		NewBaseService[*model.TableInfo](),
-	}
+	srv := new(tableInfoService)
+	srv.BaseServiceImpl = NewBaseService[*model.TableInfo](BaseServiceConfig[*model.TableInfo]{
+		NewModel: srv.NewModel,
+	})
+	return srv
 }

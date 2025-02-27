@@ -8,17 +8,27 @@ import (
 )
 
 type dictService struct {
-	*BaseService[*model.Dict]
+	*BaseServiceImpl[*model.Dict]
 	dictIDMap   map[uint64]*model.Dict
 	dictCodeMap map[string]*model.Dict
 }
 
 func NewDictService() *dictService {
-	return &dictService{
-		NewBaseService[*model.Dict](),
-		make(map[uint64]*model.Dict),
-		make(map[string]*model.Dict),
-	}
+	srv := new(dictService)
+	srv.BaseServiceImpl = NewBaseService[*model.Dict](BaseServiceConfig[*model.Dict]{
+		NewModel:       srv.NewModel,
+		CheckDuplicate: srv.CheckDuplicate,
+		DeleteCheck:    srv.DeleteCheck,
+		BuildCondition: srv.BuildCondition,
+		ListOrder:      srv.ListOrder,
+		GetFromCache:   srv.GetFromCache,
+		CacheHook:      srv.CacheHook,
+		DeleteHook:     srv.DeleteHook,
+		UpdateHook:     srv.UpdateHook,
+	})
+	srv.dictIDMap = make(map[uint64]*model.Dict)
+	srv.dictCodeMap = make(map[string]*model.Dict)
+	return srv
 }
 
 func (s *dictService) NewModel() *model.Dict {

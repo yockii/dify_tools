@@ -18,15 +18,22 @@ import (
 )
 
 type knowledgeBaseService struct {
-	*BaseService[*model.KnowledgeBase]
-	dictService DictService
+	*BaseServiceImpl[*model.KnowledgeBase]
+	applicationService ApplicationService
+	dictService        DictService
 }
 
-func NewKnowledgeBaseService(dictService DictService) *knowledgeBaseService {
-	return &knowledgeBaseService{
-		NewBaseService[*model.KnowledgeBase](),
-		dictService,
-	}
+func NewKnowledgeBaseService(dictService DictService, applicationService ApplicationService) *knowledgeBaseService {
+	srv := new(knowledgeBaseService)
+	srv.BaseServiceImpl = NewBaseService[*model.KnowledgeBase](BaseServiceConfig[*model.KnowledgeBase]{
+		NewModel:       srv.NewModel,
+		CheckDuplicate: srv.CheckDuplicate,
+		DeleteCheck:    srv.DeleteCheck,
+		BuildCondition: srv.BuildCondition,
+	})
+	srv.applicationService = applicationService
+	srv.dictService = dictService
+	return srv
 }
 
 func (s *knowledgeBaseService) NewModel() *model.KnowledgeBase {
@@ -80,12 +87,17 @@ func (s *knowledgeBaseService) GetByApplicationIDAndKnowledgeName(applicationID 
 	return &knowledge, err
 }
 
-func (s *knowledgeBaseService) CreateKnowledgeBase(ctx context.Context, knowledgeBase *model.KnowledgeBase) error {
+func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.KnowledgeBase) error {
 	if knowledgeBase.ApplicationID == 0 {
 		return fmt.Errorf("应用ID不能为空")
 	}
 	if knowledgeBase.KnowledgeBaseName == "" {
-		knowledgeBase.KnowledgeBaseName = fmt.Sprintf("%s知识库-%s", knowledgeBase.KnowledgeBaseName, util.NewShortID())
+		app, err := s.applicationService.Get(ctx, knowledgeBase.ApplicationID)
+		if err != nil {
+			logger.Error("获取应用失败", logger.F("err", err))
+			return err
+		}
+		knowledgeBase.KnowledgeBaseName = fmt.Sprintf("%s知识库-%s", app.Name, util.NewShortID())
 	} else if !strings.Contains(knowledgeBase.KnowledgeBaseName, "-") {
 		knowledgeBase.KnowledgeBaseName += "-" + util.NewShortID()
 	}
@@ -156,6 +168,75 @@ func (s *knowledgeBaseService) CreateKnowledgeBase(ctx context.Context, knowledg
 	if err := s.Create(ctx, knowledgeBase); err != nil {
 		logger.Error("创建知识库失败", logger.F("err", err))
 		return err
+	}
+	return nil
+}
+
+func (s *knowledgeBaseService) DeleteByApplicationID(ctx context.Context, applicationID uint64) error {
+	if applicationID == 0 {
+		return fmt.Errorf("应用ID不能为空")
+	}
+
+	// 获取所有知识库
+	var knowledgeBaseList []*model.KnowledgeBase
+	if err := s.db.Where(&model.KnowledgeBase{ApplicationID: applicationID}).Find(&knowledgeBaseList).Error; err != nil {
+		logger.Error("获取知识库列表失败", logger.F("err", err))
+		return err
+	}
+
+	difyBaseUrlDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyBaseUrl)
+	if err != nil {
+		logger.Error("获取dify接口地址失败", logger.F("err", err))
+		return err
+	}
+	if difyBaseUrlDict == nil || difyBaseUrlDict.Value == "" {
+		logger.Error("未配置dify接口地址")
+		return fmt.Errorf("未配置dify接口地址")
+	}
+	difyBaseUrl := difyBaseUrlDict.Value
+	difyDatasetsTokenDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDatasetsToken)
+	if err != nil {
+		logger.Error("获取dify知识库API密钥失败", logger.F("err", err))
+		return err
+	}
+	if difyDatasetsTokenDict == nil || difyDatasetsTokenDict.Value == "" {
+		logger.Error("未配置dify知识库API密钥")
+		return fmt.Errorf("未配置dify知识库API密钥")
+	}
+	difyDatasetsToken := difyDatasetsTokenDict.Value
+
+	// 循环删除每个知识库
+	for _, knowledgeBase := range knowledgeBaseList {
+		// 调用dify删除知识库
+		if knowledgeBase.OuterID == "" {
+			logger.Error("知识库外部ID为空，忽略", logger.F("knowledgeBase", knowledgeBase))
+			continue
+		}
+		httpClient := http.Client{}
+		req, err := http.NewRequest("DELETE", difyBaseUrl+"/datasets/"+knowledgeBase.OuterID, nil)
+		if err != nil {
+			logger.Error("构建dify接口请求失败", logger.F("err", err))
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+difyDatasetsToken)
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			logger.Error("调用dify接口失败", logger.F("err", err))
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+			err = fmt.Errorf("dify接口返回错误：%d", resp.StatusCode)
+			logger.Error("调用dify接口失败", logger.F("err", err))
+			continue
+		}
+		// 删除知识库
+		if err := s.Delete(ctx, knowledgeBase.ID); err != nil {
+			logger.Error("删除知识库失败", logger.F("err", err))
+			return err
+		}
+
 	}
 	return nil
 }

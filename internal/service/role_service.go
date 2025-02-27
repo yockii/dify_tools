@@ -10,14 +10,20 @@ import (
 )
 
 type roleService struct {
-	*BaseService[*model.Role]
+	*BaseServiceImpl[*model.Role]
 }
 
 func NewRoleService() RoleService {
-	return &roleService{
-		NewBaseService[*model.Role](),
-	}
+	srv := new(roleService)
+	srv.BaseServiceImpl = NewBaseService[*model.Role](BaseServiceConfig[*model.Role]{
+		NewModel:       srv.NewModel,
+		CheckDuplicate: srv.CheckDuplicate,
+		DeleteCheck:    srv.DeleteCheck,
+		BuildCondition: srv.BuildCondition,
+	})
+	return srv
 }
+
 func (s *roleService) NewModel() *model.Role {
 	return &model.Role{}
 }

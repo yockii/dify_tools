@@ -88,7 +88,7 @@ func (h *AppHandler) CreateApp(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 	}
 
-	go h.knowledgeService.CreateKnowledgeBase(c.Context(), &model.KnowledgeBase{
+	go h.knowledgeService.Create(c.Context(), &model.KnowledgeBase{
 		ApplicationID: app.ID,
 	})
 
@@ -129,6 +129,9 @@ func (h *AppHandler) DeleteApp(c *fiber.Ctx) error {
 	if err := h.appService.Delete(c.Context(), app.ID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
+
+	// 删除知识库
+	go h.knowledgeService.DeleteByApplicationID(c.Context(), app.ID)
 
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)

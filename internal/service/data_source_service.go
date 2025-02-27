@@ -11,13 +11,19 @@ import (
 )
 
 type dataSourceService struct {
-	*BaseService[*model.DataSource]
+	*BaseServiceImpl[*model.DataSource]
 }
 
 func NewDataSourceService() *dataSourceService {
-	return &dataSourceService{
-		NewBaseService[*model.DataSource](),
-	}
+	srv := new(dataSourceService)
+	srv.BaseServiceImpl = NewBaseService[*model.DataSource](BaseServiceConfig[*model.DataSource]{
+		NewModel:        srv.NewModel,
+		CheckDuplicate:  srv.CheckDuplicate,
+		DeleteCheck:     srv.DeleteCheck,
+		BuildCondition:  srv.BuildCondition,
+		ListOmitColumns: srv.ListOmitColumns,
+	})
+	return srv
 }
 
 func (s *dataSourceService) NewModel() *model.DataSource {

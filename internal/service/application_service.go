@@ -9,15 +9,23 @@ import (
 )
 
 type applicationService struct {
-	*BaseService[*model.Application]
+	*BaseServiceImpl[*model.Application]
 	appMap map[string]*model.Application
 }
 
 func NewApplicationService() *applicationService {
-	return &applicationService{
-		NewBaseService[*model.Application](),
-		make(map[string]*model.Application),
-	}
+	srv := new(applicationService)
+	srv.BaseServiceImpl = NewBaseService[*model.Application](BaseServiceConfig[*model.Application]{
+		NewModel:       srv.NewModel,
+		CheckDuplicate: srv.CheckDuplicate,
+		DeleteCheck:    srv.DeleteCheck,
+		BuildCondition: srv.BuildCondition,
+		UpdateHook:     srv.UpdateHook,
+		DeleteHook:     srv.DeleteHook,
+	})
+	srv.appMap = make(map[string]*model.Application)
+
+	return srv
 }
 
 func (s *applicationService) NewModel() *model.Application {

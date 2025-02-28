@@ -84,7 +84,7 @@ func (c *KnowledgeBaseClient) CreateDocumentByText(ID, docName, docContent strin
 	return docId, nil
 }
 
-func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader multipart.FileHeader, docMetadata map[string]string) (string, error) {
+func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader *multipart.FileHeader, docMetadata map[string]string) (string, error) {
 	fileBody := &bytes.Buffer{}
 	writer := multipart.NewWriter(fileBody)
 	part, err := writer.CreateFormFile("file", fileHeader.Filename)
@@ -154,9 +154,28 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader multipa
 		logger.Error("读取响应失败", logger.F("err", err))
 		return "", err
 	}
-	respJson := gjson.ParseBytes(response)
-	docId := respJson.Get("batch").String()
-	return docId, nil
+	return string(response), nil
+}
+
+func (c *KnowledgeBaseClient) DeleteDocument(ID, documentID string) error {
+	req, err := http.NewRequest("DELETE", c.baseUrl+"/datasets/"+ID+"/documents/"+documentID, nil)
+	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
+		return err
+	}
+	if c.defaultAPISecret != "" {
+		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("delete document failed, status code: %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func (c *KnowledgeBaseClient) CreateKnowledgeBase(name, description string) (string, error) {

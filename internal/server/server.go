@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	middlewareLogger "github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	appapi "github.com/yockii/dify_tools/internal/api_app"
 	difyapi "github.com/yockii/dify_tools/internal/api_dify"
 	sysapi "github.com/yockii/dify_tools/internal/api_sys"
 	"github.com/yockii/dify_tools/internal/middleware"
@@ -32,8 +33,9 @@ type Server struct {
 	dataSourceSrv    service.DataSourceService
 	tableInfoSrv     service.TableInfoService
 	columnInfoSrv    service.ColumnInfoService
-	dictSrc          service.DictService
+	dictSrv          service.DictService
 	knowledgeBaseSrv service.KnowledgeBaseService
+	documentSrv      service.DocumentService
 }
 
 func New() *Server {
@@ -56,6 +58,8 @@ func (s *Server) Start() error {
 	s.setupSystemRoutes()
 	// 配置DIFY路由
 	s.setupDifyRoutes()
+	// 配置应用路由
+	s.setupApplicationRoutes()
 
 	// 启动服务器
 	addr := config.GetServerAddress()
@@ -102,9 +106,10 @@ func (s *Server) setupServices() {
 	s.tableInfoSrv = service.NewTableInfoService()
 	s.columnInfoSrv = service.NewColumnInfoService()
 
-	s.dictSrc = service.NewDictService()
+	s.dictSrv = service.NewDictService()
 
-	s.knowledgeBaseSrv = service.NewKnowledgeBaseService(s.dictSrc, s.applicationSrv)
+	s.knowledgeBaseSrv = service.NewKnowledgeBaseService(s.dictSrv, s.applicationSrv)
+	s.documentSrv = service.NewDocumentService(s.dictSrv, s.applicationSrv, s.knowledgeBaseSrv)
 }
 
 // setupMiddleware 配置中间件
@@ -144,7 +149,7 @@ func (s *Server) setupSystemRoutes() {
 		s.logSrv,
 	)
 	sysapi.RegisterDictHandler(
-		s.dictSrc,
+		s.dictSrv,
 		s.logSrv,
 	)
 	sysapi.RegisterKnowledgeBaseHandler(
@@ -184,5 +189,18 @@ func (s *Server) setupDifyRoutes() {
 	// 注册用户路由
 	for _, handler := range difyapi.Handlers {
 		handler.RegisterRoutes(difyApiGroup)
+	}
+}
+
+func (s *Server) setupApplicationRoutes() {
+	appapi.RegisterDocumentHandler(
+		s.knowledgeBaseSrv,
+		s.documentSrv,
+	)
+
+	appAuthMiddleware := middleware.NewAppMiddleware(s.applicationSrv)
+	appApiGroup := s.app.Group("/api/v1", appAuthMiddleware)
+	for _, handler := range appapi.Handlers {
+		handler.RegisterRoutes(appApiGroup)
 	}
 }

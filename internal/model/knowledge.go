@@ -24,6 +24,29 @@ func (k *KnowledgeBase) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+type Document struct {
+	BaseModel
+	ApplicationID   uint64 `json:"applicationId,string" gorm:"index;not null"`
+	KnowledgeBaseID uint64 `json:"knowledgeBaseId,string" gorm:"index;not null"`
+	CustomID        string `json:"customId" gorm:"type:varchar(50);not null;index"`
+	FileName        string `json:"fileName" gorm:"type:varchar(50);not null"`
+	FileSize        int64  `json:"fileSize" gorm:"not null"`
+	OuterID         string `json:"outerId" gorm:"type:varchar(50);not null;index"`
+	Batch           string `json:"batch" gorm:"type:varchar(50);not null;index"`
+	Status          int    `json:"status" gorm:"not null"`
+}
+
+func (d *Document) TableComment() string {
+	return "文档表"
+}
+
+func (d *Document) BeforeCreate(tx *gorm.DB) error {
+	if d.ID == 0 {
+		d.ID = util.NewID()
+	}
+	return nil
+}
+
 func init() {
-	models = append(models, &KnowledgeBase{})
+	models = append(models, &KnowledgeBase{}, &Document{})
 }

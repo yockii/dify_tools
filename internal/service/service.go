@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/yockii/dify_tools/internal/constant"
@@ -98,6 +99,11 @@ type KnowledgeBaseService interface {
 	GetDifyKnowledgeBaseClient(ctx context.Context) (*dify.KnowledgeBaseClient, error)
 	DeleteByApplicationID(ctx context.Context, applicationID uint64) error
 	GetByApplicationIDAndCustomID(ctx context.Context, applicationID uint64, customID string) (*model.KnowledgeBase, error)
+}
+
+type DocumentService interface {
+	BaseService[*model.Document]
+	AddDocument(ctx context.Context, document *model.Document, fileHeader *multipart.FileHeader) (*model.KnowledgeBase, error)
 }
 
 // /////////////////////////////

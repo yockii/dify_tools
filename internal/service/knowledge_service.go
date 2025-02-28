@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -21,7 +22,7 @@ type knowledgeBaseService struct {
 
 func NewKnowledgeBaseService(dictService DictService, applicationService ApplicationService) *knowledgeBaseService {
 	srv := new(knowledgeBaseService)
-	srv.BaseServiceImpl = NewBaseService[*model.KnowledgeBase](BaseServiceConfig[*model.KnowledgeBase]{
+	srv.BaseServiceImpl = NewBaseService(BaseServiceConfig[*model.KnowledgeBase]{
 		NewModel:       srv.NewModel,
 		CheckDuplicate: srv.CheckDuplicate,
 		DeleteCheck:    srv.DeleteCheck,
@@ -126,8 +127,8 @@ func (s *knowledgeBaseService) GetDifyKnowledgeBaseClient(ctx context.Context) (
 }
 
 func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.KnowledgeBase) error {
-	if knowledgeBase.ApplicationID == 0 {
-		return constant.ErrRecordIDEmpty
+	if knowledgeBase.ApplicationID == 0 && knowledgeBase.CustomID == "" {
+		return constant.ErrInvalidParams
 	}
 	app, err := s.applicationService.Get(ctx, knowledgeBase.ApplicationID)
 	if err != nil {
@@ -203,6 +204,9 @@ func (s *knowledgeBaseService) GetByApplicationIDAndCustomID(ctx context.Context
 		Where("custom_id = ?", customID).
 		First(&knowledgeBase).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		logger.Error("获取知识库失败", logger.F("err", err))
 		return nil, constant.ErrDatabaseError
 	}

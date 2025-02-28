@@ -16,8 +16,8 @@ type User struct {
 	Password  string    `json:"password,omitempty" gorm:"type:varchar(100);not null"`
 	RoleID    uint64    `json:"roleId,string" gorm:"index;not null"`
 	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
-	LastLogin time.Time `json:"lastLoginAt" gorm:"type:timestamp"`
-	UpdatedAt time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	LastLogin time.Time `json:"lastLoginAt,omitzero" gorm:"type:timestamp"`
+	UpdatedAt time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (u *User) TableComment() string {
@@ -83,7 +83,7 @@ type Role struct {
 	Name      string    `json:"name" gorm:"type:varchar(50);not null"`
 	Code      string    `json:"code" gorm:"type:varchar(50);uniqueIndex;not null"`
 	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
-	UpdatedAt time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	UpdatedAt time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (r *Role) TableComment() string {
@@ -107,7 +107,7 @@ type Permission struct {
 	Status    int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
 	ParentID  uint64    `json:"parentId,string" gorm:"index"`
 	Sort      int       `json:"sort" gorm:"type:int;default:0"`
-	UpdatedAt time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	UpdatedAt time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (p *Permission) TableComment() string {
@@ -145,11 +145,11 @@ func (rp *RolePermission) BeforeCreate(tx *gorm.DB) error {
 type Log struct {
 	BaseModel
 	UserID    uint64 `json:"userId,string" gorm:"index;not null"`
-	User      *User  `json:"user" gorm:"-"` // 关联字段
 	Action    int    `json:"action" gorm:"not null"`
 	IP        string `json:"ip" gorm:"type:varchar(50)"`
 	UserAgent string `json:"userAgent" gorm:"type:varchar(255)"`
 	Failed    bool   `json:"failed" gorm:"default:false;not null"`
+	User      *User  `json:"user" gorm:"foreignKey:UserID"` // 关联字段
 }
 
 func (l *Log) TableComment() string {

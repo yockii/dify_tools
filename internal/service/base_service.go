@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/database"
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -93,12 +93,12 @@ func (s *BaseServiceImpl[T]) Create(ctx context.Context, record T) error {
 	if duplicate, err := s.BaseCheckDuplicate(record); err != nil {
 		return err
 	} else if duplicate {
-		return fmt.Errorf("记录已存在")
+		return constant.ErrRecordDuplicate
 	}
 
 	if err := s.db.Create(record).Error; err != nil {
 		logger.Error("创建记录失败", logger.F("error", err))
-		return fmt.Errorf("创建记录失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 	return nil
 }
@@ -107,29 +107,29 @@ func (s *BaseServiceImpl[T]) Create(ctx context.Context, record T) error {
 func (s *BaseServiceImpl[T]) Update(ctx context.Context, record T) error {
 	id := record.GetID()
 	if id == 0 {
-		return fmt.Errorf("ID不能为空")
+		return constant.ErrRecordIDEmpty
 	}
 	// existingRecord := s.NewModel()
 	var existingRecord T
 	if err := s.db.First(&existingRecord, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("记录不存在")
+			return constant.ErrRecordNotFound
 		}
 		logger.Error("查询记录失败", logger.F("error", err))
-		return fmt.Errorf("查询记录失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 
 	// 检查是否重复
 	if duplicate, err := s.BaseCheckDuplicate(record); err != nil {
 		return err
 	} else if duplicate {
-		return fmt.Errorf("记录已存在")
+		return constant.ErrRecordDuplicate
 	}
 
 	// 更新记录
 	if err := s.db.Model(record).Updates(record).Error; err != nil {
 		logger.Error("更新记录失败", logger.F("error", err))
-		return fmt.Errorf("更新记录失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 
 	if s.config.UpdateHook != nil {
@@ -143,10 +143,10 @@ func (s *BaseServiceImpl[T]) Delete(ctx context.Context, id uint64) error {
 	var record T
 	if err := s.db.First(&record, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("记录不存在")
+			return constant.ErrRecordNotFound
 		}
 		logger.Error("查询记录失败", logger.F("error", err))
-		return fmt.Errorf("查询记录失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 
 	// 检查是否可以删除
@@ -157,7 +157,7 @@ func (s *BaseServiceImpl[T]) Delete(ctx context.Context, id uint64) error {
 	// 删除记录
 	if err := s.db.Delete(record).Error; err != nil {
 		logger.Error("删除记录失败", logger.F("error", err))
-		return fmt.Errorf("删除记录失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 
 	s.BaseDeleteHook(ctx, record)
@@ -175,10 +175,10 @@ func (s *BaseServiceImpl[T]) Get(ctx context.Context, id uint64) (T, error) {
 	var record T
 	if err := s.db.First(&record, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return record, fmt.Errorf("记录不存在")
+			return record, constant.ErrRecordNotFound
 		}
 		logger.Error("查询记录失败", logger.F("error", err))
-		return record, fmt.Errorf("查询记录失败: %v", err)
+		return record, constant.ErrDatabaseError
 	}
 	if s.config.CacheHook != nil {
 		s.config.CacheHook(ctx, record)
@@ -206,14 +206,14 @@ func (s *BaseServiceImpl[T]) List(ctx context.Context, condition T, offset, limi
 	// 查询记录总数
 	if err := query.Count(&total).Error; err != nil {
 		logger.Error("查询记录总数失败", logger.F("error", err))
-		return records, 0, fmt.Errorf("查询记录总数失败: %v", err)
+		return records, 0, constant.ErrDatabaseError
 	}
 
 	if total > 0 && limit > 0 {
 		// 查询记录列表
 		if err := query.Order(s.BaseListOrder()).Offset(offset).Limit(limit).Find(&records).Error; err != nil {
 			logger.Error("查询记录失败", logger.F("error", err))
-			return records, 0, fmt.Errorf("查询记录失败: %v", err)
+			return records, 0, constant.ErrDatabaseError
 		}
 	}
 

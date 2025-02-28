@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
@@ -46,7 +47,7 @@ func (s *dictService) CheckDuplicate(record *model.Dict) (bool, error) {
 	var count int64
 	if err := query.Count(&count).Error; err != nil {
 		logger.Error("查询记录失败", logger.F("error", err))
-		return false, err
+		return false, constant.ErrDatabaseError
 	}
 	return count > 0, nil
 }
@@ -99,7 +100,7 @@ func (s *dictService) GetByCode(ctx context.Context, code string) (*model.Dict, 
 	err := s.db.Where(&model.Dict{Code: code}).First(&dict).Error
 	if err != nil {
 		logger.Error("查询记录失败", logger.F("error", err))
-		return nil, err
+		return nil, constant.ErrDatabaseError
 	}
 	s.CacheHook(ctx, &dict)
 	return &dict, nil

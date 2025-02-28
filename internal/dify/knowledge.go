@@ -237,3 +237,41 @@ func (c *KnowledgeBaseClient) DocumentBatchIndexingStatus(ID, batchID string) (s
 	status := respJson.Get("status").String()
 	return status, nil
 }
+
+func (c *KnowledgeBaseClient) Retrieve(ID, query string, topK int, scoreThreshold float64) (string, error) {
+	body := map[string]interface{}{
+		"query": query,
+		"retrieval_model": map[string]interface{}{
+			"search_method":           "hybrid_search",
+			"reranking_enable":        false,
+			"weights":                 0.7,
+			"top_k":                   topK,
+			"score_threshold":         scoreThreshold,
+			"score_threshold_enabled": scoreThreshold > 0,
+		},
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		logger.Error("序列化请求参数失败", logger.F("err", err))
+		return "", err
+	}
+	req, err := c.buildPostRequest(c.baseUrl+"/datasets/"+ID+"/retrieve", bodyBytes)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("retrieve failed, status code: %d", resp.StatusCode)
+	}
+	response, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
+		return "", err
+	}
+	return string(response), nil
+}

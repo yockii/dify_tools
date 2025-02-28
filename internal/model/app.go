@@ -17,7 +17,7 @@ type Application struct {
 	Status            int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
 	RateLimitInMinute int       `json:"rateLimitInMinute" gorm:"default:-1"`       // 每分钟限流, -1表示不限制
 	AllowedOrigins    string    `json:"allowedOrigins"`                            // 允许的来源域名, 逗号分隔
-	UpdatedAt         time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	UpdatedAt         time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (a *Application) TableComment() string {
@@ -44,10 +44,9 @@ type DataSource struct {
 	Password      string    `json:"password" gorm:"type:varchar(50);not null"`
 	Database      string    `json:"database" gorm:"type:varchar(50);not null"`
 	Schema        string    `json:"schema" gorm:"type:varchar(50);default:public"` // 数据库schema
-	SyncTime      time.Time `json:"syncTime" gorm:"type:timestamp"`
+	SyncTime      time.Time `json:"syncTime,omitzero" gorm:"type:timestamp"`
 	Status        int       `json:"status" gorm:"type:int;default:1;not null"` // 1: 正常, -1: 禁用
-	CreatedAt     time.Time `json:"createdAt" gorm:"type:timestamp;not null"`
-	UpdatedAt     time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	UpdatedAt     time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (d *DataSource) TableComment() string {
@@ -69,8 +68,7 @@ type TableInfo struct {
 	DataSourceID  uint64    `json:"dataSourceId,string" gorm:"index;not null"`
 	Name          string    `json:"name" gorm:"type:varchar(50);not null"`
 	Comment       string    `json:"comment" gorm:"type:varchar(200)"`
-	CreatedAt     time.Time `json:"createdAt" gorm:"type:timestamp;not null"`
-	UpdatedAt     time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	UpdatedAt     time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (t *TableInfo) TableComment() string {
@@ -99,8 +97,7 @@ type ColumnInfo struct {
 	Nullable      bool      `json:"nullable"`
 	DefaultValue  string    `json:"defaultValue"`
 	Comment       string    `json:"comment"`
-	CreatedAt     time.Time `json:"createdAt" gorm:"type:timestamp;not null"`
-	UpdatedAt     time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	UpdatedAt     time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (c *ColumnInfo) TableComment() string {
@@ -123,7 +120,7 @@ type Usage struct {
 	Requests      int64     `json:"requests" gorm:"type:bigint;default:0"`
 	Tokens        int64     `json:"tokens" gorm:"type:bigint;default:0"`
 	Errors        int64     `json:"errors" gorm:"type:bigint;default:0"`
-	UpdatedAt     time.Time `json:"updatedAt" gorm:"type:timestamp;not null"`
+	UpdatedAt     time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (u *Usage) TableComment() string {

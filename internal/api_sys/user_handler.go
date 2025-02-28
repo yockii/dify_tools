@@ -88,7 +88,7 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 	}
 	uid, token, err := h.authService.Login(c.Context(), req.Username, req.Password)
 	if err != nil {
-		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录登录日志
@@ -106,7 +106,7 @@ func (h *UserHandler) refreshToken(c *fiber.Ctx) error {
 
 	newToken, err := h.authService.Refresh(c.Context(), token)
 	if err != nil {
-		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.OK(fiber.Map{
@@ -253,7 +253,7 @@ func (h *UserHandler) updatePassword(c *fiber.Ctx) error {
 	}
 
 	if err := h.userService.UpdatePassword(c.Context(), user.ID, req.OldPassword, req.NewPassword); err != nil {
-		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
@@ -274,7 +274,7 @@ func (h *UserHandler) updateStatus(c *fiber.Ctx) error {
 	}
 
 	if err := h.userService.UpdateStatus(c.Context(), req.ID, req.Status); err != nil {
-		return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 
 	// 记录操作日志
@@ -410,8 +410,20 @@ func (h *UserHandler) listLogs(c *fiber.Ctx) error {
 			}
 		}
 	}
+	var uid uint64
+	username := c.Query("username")
+	if username != "" {
+		user, err := h.userService.GetUserByUsername(c.Context(), username)
+		if err != nil {
+			return c.JSON(service.NewResponse(service.NewListResponse(
+				nil, 0, offset, limit), nil, "用户查找失败"))
+		}
+		if user != nil {
+			uid = user.ID
+		}
+	}
 
-	logs, total, err := h.logService.ListLogs(c.Context(), 0, actions, offset, limit)
+	logs, total, err := h.logService.ListLogs(c.Context(), uid, actions, offset, limit)
 	if err != nil {
 		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}

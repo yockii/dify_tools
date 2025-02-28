@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/datasource"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -42,7 +43,7 @@ func (s *dataSourceService) CheckDuplicate(record *model.DataSource) (bool, erro
 	var count int64
 	if err := query.Count(&count).Error; err != nil {
 		logger.Error("查询记录失败", logger.F("error", err))
-		return false, err
+		return false, constant.ErrDatabaseError
 	}
 	return count > 0, nil
 }
@@ -72,10 +73,10 @@ func (s *dataSourceService) Delete(ctx context.Context, id uint64) error {
 	var record model.DataSource
 	if err := s.db.First(&record, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("记录不存在")
+			return constant.ErrRecordNotFound
 		}
 		logger.Error("查询记录失败", logger.F("error", err))
-		return fmt.Errorf("查询记录失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 	// 检查是否可以删除
 	if err := s.DeleteCheck(&record); err != nil {
@@ -86,21 +87,21 @@ func (s *dataSourceService) Delete(ctx context.Context, id uint64) error {
 	if err := s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&record).Error; err != nil {
 			logger.Error("删除记录失败", logger.F("error", err))
-			return fmt.Errorf("删除记录失败: %v", err)
+			return constant.ErrDatabaseError
 		}
 		// 删除表信息
 		if err := tx.Where(&model.TableInfo{
 			DataSourceID: record.ID,
 		}).Delete(&model.TableInfo{}).Error; err != nil {
 			logger.Error("删除表信息失败", logger.F("error", err))
-			return fmt.Errorf("删除表信息失败: %v", err)
+			return constant.ErrDatabaseError
 		}
 		// 删除字段信息
 		if err := tx.Where(&model.ColumnInfo{
 			DataSourceID: record.ID,
 		}).Delete(&model.ColumnInfo{}).Error; err != nil {
 			logger.Error("删除字段信息失败", logger.F("error", err))
-			return fmt.Errorf("删除字段信息失败: %v", err)
+			return constant.ErrDatabaseError
 		}
 		return nil
 	}); err != nil {
@@ -114,15 +115,15 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 	var dataSource model.DataSource
 	if err := s.db.First(&dataSource, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("数据源不存在")
+			return constant.ErrRecordNotFound
 		}
 		logger.Error("查询数据源失败", logger.F("error", err))
-		return fmt.Errorf("查询数据源失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 
 	db, err := datasource.GetDB(&dataSource)
 	if err != nil {
-		return fmt.Errorf("获取数据库连接失败: %v", err)
+		return err
 	}
 
 	// 查询表信息
@@ -141,7 +142,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 	}
 	if err != nil {
 		logger.Error("查询表信息失败", logger.F("error", err))
-		return fmt.Errorf("查询表信息失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 
 	var tableInfos []*model.TableInfo
@@ -158,7 +159,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 		err := tx.Create(&tableInfos).Error
 		if err != nil {
 			logger.Error("创建表信息失败", logger.F("error", err))
-			return fmt.Errorf("创建表信息失败: %v", err)
+			return constant.ErrDatabaseError
 		}
 
 		for _, table := range tableInfos {
@@ -167,7 +168,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 				Name:         table.Name,
 			}).Assign(table).FirstOrCreate(table).Error; err != nil {
 				logger.Error("同步表信息失败", logger.F("error", err))
-				return fmt.Errorf("同步表信息失败: %v", err)
+				return constant.ErrDatabaseError
 			}
 			// // 查询表信息
 			// var tableInfo model.TableInfo
@@ -189,7 +190,7 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 			ct, err := migrator.ColumnTypes(table.Name)
 			if err != nil {
 				logger.Error("查询列信息失败", logger.F("error", err))
-				return fmt.Errorf("查询列信息失败: %v", err)
+				return constant.ErrDatabaseError
 			}
 			for _, c := range ct {
 				t, _ := c.ColumnType()
@@ -222,14 +223,14 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 				Name:         column.Name,
 			}).Assign(column).FirstOrCreate(column).Error; err != nil {
 				logger.Error("同步字段信息失败", logger.F("error", err))
-				return fmt.Errorf("同步字段信息失败: %v", err)
+				return constant.ErrDatabaseError
 			}
 		}
 		return nil
 	})
 
 	if err != nil {
-		return fmt.Errorf("同步数据源失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 
 	return nil

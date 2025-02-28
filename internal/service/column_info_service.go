@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
@@ -36,7 +37,7 @@ func (s *columnInfoService) CheckDuplicate(record *model.ColumnInfo) (bool, erro
 	var count int64
 	if err := query.Count(&count).Error; err != nil {
 		logger.Error("查询记录失败", logger.F("error", err))
-		return false, err
+		return false, constant.ErrDatabaseError
 	}
 	return count > 0, nil
 }

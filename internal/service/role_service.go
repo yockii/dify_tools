@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/database"
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -37,7 +37,7 @@ func (s *roleService) CheckDuplicate(record *model.Role) (bool, error) {
 	var count int64
 	if err := query.Count(&count).Error; err != nil {
 		logger.Error("查询记录失败", logger.F("error", err))
-		return false, fmt.Errorf("检查角色代码失败: %v", err)
+		return false, constant.ErrDatabaseError
 	}
 	return count > 0, nil
 }
@@ -47,10 +47,10 @@ func (s *roleService) DeleteCheck(record *model.Role) error {
 	var count int64
 	if err := database.GetDB().Model(&model.User{}).Where("role_id = ?", record.ID).Count(&count).Error; err != nil {
 		logger.Error("查询角色是否使用失败", logger.F("error", err))
-		return fmt.Errorf("查询角色是否使用失败: %v", err)
+		return constant.ErrDatabaseError
 	}
 	if count > 0 {
-		return fmt.Errorf("角色正在使用，无法删除")
+		return constant.ErrRoleInUse
 	}
 	return nil
 }
@@ -59,10 +59,10 @@ func (s *roleService) GetRoleByCode(ctx context.Context, code string) (*model.Ro
 	var role model.Role
 	if err := s.db.First(&role, "code = ?", code).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("角色不存在")
+			return nil, constant.ErrRecordNotFound
 		}
 		logger.Error("查询角色失败", logger.F("error", err))
-		return nil, fmt.Errorf("查询角色失败: %v", err)
+		return nil, constant.ErrDatabaseError
 	}
 
 	return &role, nil

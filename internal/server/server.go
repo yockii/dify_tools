@@ -175,6 +175,10 @@ func (s *Server) setupDifyRoutes() {
 		s.tableInfoSrv,
 		s.columnInfoSrv,
 	)
+	difyapi.RegisterKnowledgeBaseHandler(
+		s.applicationSrv,
+		s.knowledgeBaseSrv,
+	)
 
 	difyApiGroup := s.app.Group("/dify_api/v1", middleware.NewAppMiddleware(s.applicationSrv))
 	// 注册用户路由

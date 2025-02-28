@@ -9,6 +9,7 @@ type KnowledgeBase struct {
 	BaseModel
 	OuterID           string `json:"outerId" gorm:"type:varchar(50);not null;index"`
 	ApplicationID     uint64 `json:"applicationId,string" gorm:"index;not null"`
+	CustomID          string `json:"customId" gorm:"type:varchar(50);not null;index"`
 	KnowledgeBaseName string `json:"knowledgeBaseName" gorm:"type:varchar(50);not null"`
 }
 

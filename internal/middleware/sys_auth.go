@@ -33,13 +33,13 @@ func NewAuthMiddleware(
 		authorization := c.Get("Authorization")
 		token := strings.TrimPrefix(authorization, "Bearer ")
 		if token == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrInvalidToken))
 		}
 
 		// 检查token是否在黑名单中
 		if sessionService != nil && sessionService.IsTokenBlocked(c.Context(), token) {
 			logger.Warn("blocked token used", logger.F("token", token))
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrInvalidToken))
 		}
 
 		// 验证token

@@ -83,7 +83,7 @@ func (h *KnowledgeBaseHandler) GetKnowledgeBaseList(c *fiber.Ctx) error {
 
 	list, total, err := h.knowledgeService.List(c.Context(), &condition, offset, limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))

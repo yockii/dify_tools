@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/logger"
 	"gorm.io/gorm"
@@ -50,10 +50,10 @@ func (s *tableInfoService) Delete(ctx context.Context, id uint64) error {
 	var record model.TableInfo
 	if err := s.db.First(&record, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("记录不存在")
+			return constant.ErrRecordNotFound
 		}
 		logger.Error("查询记录失败", logger.F("err", err))
-		return err
+		return constant.ErrDatabaseError
 	}
 
 	if err := s.db.Transaction(func(tx *gorm.DB) error {
@@ -61,11 +61,11 @@ func (s *tableInfoService) Delete(ctx context.Context, id uint64) error {
 			TableID: id,
 		}).Error; err != nil {
 			logger.Error("删除列信息失败", logger.F("err", err))
-			return err
+			return constant.ErrDatabaseError
 		}
 		if err := tx.Where("id = ?", id).Delete(&model.TableInfo{}).Error; err != nil {
 			logger.Error("删除表信息失败", logger.F("err", err))
-			return err
+			return constant.ErrDatabaseError
 		}
 		return nil
 	}); err != nil {

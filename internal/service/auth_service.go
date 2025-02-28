@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/config"
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -28,11 +28,11 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	// 验证用户名密码
 	user, err := s.userService.GetUserByUsername(ctx, username)
 	if err != nil {
-		return 0, "", fmt.Errorf("凭据无效")
+		return 0, "", err
 	}
 
 	if !user.ComparePassword(password) {
-		return 0, "", fmt.Errorf("凭据无效")
+		return 0, "", constant.ErrInvalidCredential
 	}
 
 	// 生成token
@@ -48,7 +48,7 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	signedToken, err := token.SignedString(s.secret)
 	if err != nil {
 		logger.Error("生成token失败", logger.F("error", err))
-		return 0, "", fmt.Errorf("生成token失败: %v", err)
+		return 0, "", constant.ErrServerError
 	}
 
 	// 更新最后登录时间
@@ -60,7 +60,7 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	// 创建会话
 	if s.sessionService != nil {
 		if _, err := s.sessionService.CreateSession(ctx, user); err != nil {
-			return 0, "", fmt.Errorf("创建会话失败: %v", err)
+			return 0, "", err
 		}
 	}
 
@@ -70,31 +70,33 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 func (s *authService) Verify(ctx context.Context, tokenString string) (*model.User, error) {
 	// 检查token是否在黑名单中
 	if s.sessionService != nil && s.sessionService.IsTokenBlocked(ctx, tokenString) {
-		return nil, fmt.Errorf("token被禁止")
+		logger.Warn("token被禁止", logger.F("token", tokenString))
+		return nil, constant.ErrInvalidToken
 	}
 
 	// 解析token
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("非预期的token解析方式: %v", token.Header["alg"])
+			logger.Warn("非预期的token解析方式", logger.F("alg", token.Header["alg"]))
+			return nil, constant.ErrInvalidToken
 		}
 		return s.secret, nil
 	})
 
 	if err != nil {
 		logger.Warn("无效token", logger.F("error", err))
-		return nil, fmt.Errorf("无效token")
+		return nil, constant.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, fmt.Errorf("无效token")
+		return nil, constant.ErrInvalidToken
 	}
 
 	// 获取用户信息
 	user, err := s.userService.Get(ctx, claims.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("无效token")
+		return nil, err
 	}
 
 	user.Password = ""
@@ -130,7 +132,7 @@ func (s *authService) Logout(ctx context.Context, tokenString string) error {
 	// 将token加入黑名单
 	if s.sessionService != nil {
 		if err := s.sessionService.BlockToken(ctx, tokenString); err != nil {
-			return fmt.Errorf("禁用token失败: %v", err)
+			return err
 		}
 	}
 

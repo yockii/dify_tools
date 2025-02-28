@@ -86,7 +86,7 @@ func (h *AppHandler) CreateApp(c *fiber.Ctx) error {
 	app.APIKey = "ak-" + util.NewShortID()
 
 	if err := h.appService.Create(c.Context(), &app); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 
 	go h.knowledgeService.Create(c.Context(), &model.KnowledgeBase{
@@ -105,7 +105,7 @@ func (h *AppHandler) UpdateApp(c *fiber.Ctx) error {
 	var app model.Application
 	if err := c.BodyParser(&app); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	app.APIKey = "" // 禁止修改APIKey
@@ -126,7 +126,7 @@ func (h *AppHandler) DeleteApp(c *fiber.Ctx) error {
 	var app model.Application
 	if err := c.BodyParser(&app); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.appService.Delete(c.Context(), app.ID); err != nil {
@@ -159,7 +159,7 @@ func (h *AppHandler) ListApps(c *fiber.Ctx) error {
 
 	apps, total, err := h.appService.List(c.Context(), &condition, offset, limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 
 	return c.JSON(service.OK(service.NewListResponse(apps, total, offset, limit)))
@@ -192,7 +192,7 @@ func (h *AppHandler) CreateDataSource(c *fiber.Ctx) error {
 	var dataSource model.DataSource
 	if err := c.BodyParser(&dataSource); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if dataSource.ApplicationID == 0 || dataSource.Name == "" || dataSource.Host == "" || dataSource.Port == 0 {
@@ -215,7 +215,7 @@ func (h *AppHandler) UpdateDataSource(c *fiber.Ctx) error {
 	var dataSource model.DataSource
 	if err := c.BodyParser(&dataSource); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.dataSourceService.Update(c.Context(), &dataSource); err != nil {
@@ -234,7 +234,7 @@ func (h *AppHandler) DeleteDataSource(c *fiber.Ctx) error {
 	var dataSource model.DataSource
 	if err := c.BodyParser(&dataSource); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.dataSourceService.Delete(c.Context(), dataSource.ID); err != nil {
@@ -259,7 +259,7 @@ func (h *AppHandler) ListDataSources(c *fiber.Ctx) error {
 	var condition model.DataSource
 	if err := c.QueryParser(&condition); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	dataSources, total, err := h.dataSourceService.List(c.Context(), &condition, offset, limit)
@@ -316,7 +316,7 @@ func (h *AppHandler) GetDataSourceTables(c *fiber.Ctx) error {
 	condition := new(model.TableInfo)
 	if err := c.QueryParser(condition); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if condition.DataSourceID == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
@@ -335,7 +335,7 @@ func (h *AppHandler) UpdateDataSourceTable(c *fiber.Ctx) error {
 	var table model.TableInfo
 	if err := c.BodyParser(&table); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.tableInfoService.Update(c.Context(), &table); err != nil {
@@ -360,7 +360,7 @@ func (h *AppHandler) GetDataSourceColumns(c *fiber.Ctx) error {
 	condition := new(model.ColumnInfo)
 	if err := c.QueryParser(condition); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if condition.TableID == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
@@ -379,7 +379,7 @@ func (h *AppHandler) DeleteDataSourceTable(c *fiber.Ctx) error {
 	var table model.TableInfo
 	if err := c.BodyParser(&table); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if table.ID == 0 {
@@ -402,7 +402,7 @@ func (h *AppHandler) UpdateDataSourceColumn(c *fiber.Ctx) error {
 	var column model.ColumnInfo
 	if err := c.BodyParser(&column); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if err := h.columnInfoService.Update(c.Context(), &column); err != nil {
@@ -421,7 +421,7 @@ func (h *AppHandler) DeleteDataSourceColumn(c *fiber.Ctx) error {
 	var column model.ColumnInfo
 	if err := c.BodyParser(&column); err != nil {
 		logger.Error("请求参数解析失败", logger.F("err", err))
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
 	if column.ID == 0 {

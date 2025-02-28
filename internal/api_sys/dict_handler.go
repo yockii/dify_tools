@@ -46,7 +46,7 @@ func (h *DictHandler) Create(c *fiber.Ctx) error {
 	}
 	if err := h.dictService.Create(c.Context(), record); err != nil {
 		logger.Error("创建字典失败", logger.F("err", err))
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
@@ -63,7 +63,7 @@ func (h *DictHandler) Update(c *fiber.Ctx) error {
 	}
 	if err := h.dictService.Update(c.Context(), record); err != nil {
 		logger.Error("更新字典失败", logger.F("err", err))
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
@@ -79,7 +79,7 @@ func (h *DictHandler) Delete(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 	if err := h.dictService.Delete(c.Context(), record.ID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 	// 记录操作日志
 	user := c.Locals("user").(*model.User)
@@ -96,7 +96,7 @@ func (h *DictHandler) Get(c *fiber.Ctx) error {
 	}
 	record, err := h.dictService.Get(c.Context(), id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 	return c.JSON(service.OK(record))
 }
@@ -115,7 +115,7 @@ func (h *DictHandler) List(c *fiber.Ctx) error {
 
 	list, total, err := h.dictService.List(c.Context(), condition, offset, limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))
 }
@@ -138,16 +138,16 @@ func (h *DictHandler) ListByParentCode(c *fiber.Ctx) error {
 
 	parentDict, err := h.dictService.GetByCode(c.Context(), parentCode)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 	if parentDict == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrDictNotFound))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrRecordNotFound))
 	}
 
 	condition.ParentID = parentDict.ID
 	list, total, err := h.dictService.List(c.Context(), condition, offset, limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
 	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))
 }

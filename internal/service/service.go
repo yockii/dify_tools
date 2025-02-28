@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/yockii/dify_tools/internal/constant"
+	"github.com/yockii/dify_tools/internal/dify"
 	"github.com/yockii/dify_tools/internal/model"
 )
 
@@ -94,7 +95,9 @@ type ColumnInfoService interface {
 
 type KnowledgeBaseService interface {
 	BaseService[*model.KnowledgeBase]
+	GetDifyKnowledgeBaseClient(ctx context.Context) (*dify.KnowledgeBaseClient, error)
 	DeleteByApplicationID(ctx context.Context, applicationID uint64) error
+	GetByApplicationIDAndCustomID(ctx context.Context, applicationID uint64, customID string) (*model.KnowledgeBase, error)
 }
 
 // /////////////////////////////
@@ -114,11 +117,15 @@ func Error(err error) *Response {
 }
 
 // NewResponse 创建响应
-func NewResponse(data interface{}, err error) *Response {
+func NewResponse(data interface{}, err error, msg ...string) *Response {
+	message := "success"
+	if len(msg) > 0 {
+		message = msg[0]
+	}
 	if err == nil {
 		return &Response{
 			Code:    http.StatusOK,
-			Message: "success",
+			Message: message,
 			Data:    data,
 		}
 	}

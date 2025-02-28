@@ -17,7 +17,7 @@ func NewAppMiddleware(
 		apiKey := strings.TrimPrefix(authorization, "Bearer ")
 
 		if apiKey == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
 		}
 
 		// 检查api_key是否有效
@@ -26,7 +26,7 @@ func NewAppMiddleware(
 			return c.Status(constant.GetErrorCode(err)).JSON(service.NewResponse(nil, err))
 		}
 		if application == nil || application.Status != 1 {
-			return c.Status(fiber.StatusUnauthorized).JSON(service.NewResponse(nil, constant.ErrUnauthorized))
+			return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
 		}
 
 		// TODO 后续对限流和源做认证

@@ -18,7 +18,7 @@ type Model interface {
 
 type BaseModel struct {
 	ID        uint64    `json:"id,string" gorm:"primaryKey"`
-	CreatedAt time.Time `json:"createdAt" gorm:"type:timestamp;not null"`
+	CreatedAt time.Time `json:"createdAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (b *BaseModel) TableComment() string {

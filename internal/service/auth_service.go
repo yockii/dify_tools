@@ -48,7 +48,7 @@ func (s *authService) Login(ctx context.Context, username string, password strin
 	signedToken, err := token.SignedString(s.secret)
 	if err != nil {
 		logger.Error("生成token失败", logger.F("error", err))
-		return 0, "", constant.ErrServerError
+		return 0, "", constant.ErrSerializeError
 	}
 
 	// 更新最后登录时间

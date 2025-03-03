@@ -58,7 +58,12 @@ func (s *documentService) DeleteCheck(record *model.Document) error {
 }
 
 func (s *documentService) BuildCondition(query *gorm.DB, condition *model.Document) *gorm.DB {
-	query = query.Where("application_id = ? and custom_id = ?", condition.ApplicationID, condition.CustomID)
+	query = query.Where("application_id = ?", condition.ApplicationID)
+	if condition.CustomID != "" {
+		query = query.Where("custom_id IN (0, ?)", condition.CustomID)
+	} else {
+		query = query.Where("custom_id = 0")
+	}
 	if condition.KnowledgeBaseID != 0 {
 		query = query.Where("knowledge_base_id = ?", condition.KnowledgeBaseID)
 	}

@@ -154,6 +154,7 @@ func (s *Server) setupSystemRoutes() {
 	)
 	sysapi.RegisterKnowledgeBaseHandler(
 		s.knowledgeBaseSrv,
+		s.documentSrv,
 		s.logSrv,
 	)
 

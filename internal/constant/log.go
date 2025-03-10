@@ -21,6 +21,8 @@ const (
 	LogActionUpdateApplication
 	LogActionDeleteApplication
 	LogActionUpdateApplicationConfig
+	LogActionNewApplicationAgent
+	LogActionDeleteApplicationAgent
 )
 
 const (

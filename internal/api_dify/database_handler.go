@@ -4,34 +4,38 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/datasource"
+	"github.com/yockii/dify_tools/internal/middleware"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
 	"github.com/yockii/dify_tools/pkg/logger"
 )
 
 type DatabaseHandler struct {
-	dataSourceService service.DataSourceService
-	tableInfoService  service.TableInfoService
-	columnInfoService service.ColumnInfoService
+	applicationService service.ApplicationService
+	dataSourceService  service.DataSourceService
+	tableInfoService   service.TableInfoService
+	columnInfoService  service.ColumnInfoService
 }
 
 func RegisterDatabaseHandler(
+	applicationService service.ApplicationService,
 	dataSourceService service.DataSourceService,
 	tableInfoService service.TableInfoService,
 	columnInfoService service.ColumnInfoService,
 ) {
 	handler := &DatabaseHandler{
-		dataSourceService: dataSourceService,
-		tableInfoService:  tableInfoService,
-		columnInfoService: columnInfoService,
+		applicationService: applicationService,
+		dataSourceService:  dataSourceService,
+		tableInfoService:   tableInfoService,
+		columnInfoService:  columnInfoService,
 	}
 	Handlers = append(Handlers, handler)
 }
 
 func (h *DatabaseHandler) RegisterRoutes(router fiber.Router) {
-	router.Get("/databases", h.GetDatabases)
-	router.Get("/schema", h.GetDatabaseSchema)
-	router.Post("/executeSql", h.ExecuteSqlForDatabase)
+	router.Get("/databases", middleware.NewAppMiddleware(h.applicationService), h.GetDatabases)
+	router.Get("/schema", middleware.NewAppMiddleware(h.applicationService), h.GetDatabaseSchema)
+	router.Post("/executeSql", middleware.NewAppMiddleware(h.applicationService), h.ExecuteSqlForDatabase)
 }
 
 func (h *DatabaseHandler) GetDatabases(c *fiber.Ctx) error {

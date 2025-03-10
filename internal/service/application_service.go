@@ -100,3 +100,37 @@ func (s *applicationService) DeleteHook(ctx context.Context, record *model.Appli
 func (s *applicationService) UpdateHook(ctx context.Context, record *model.Application) {
 	delete(s.appMap, record.APIKey)
 }
+
+func (s *applicationService) ApplicationAgents(ctx context.Context, applicationID uint64) ([]*model.ApplicationAgent, error) {
+	var agents []*model.ApplicationAgent
+	err := s.db.Where(&model.ApplicationAgent{
+		ApplicationID: applicationID,
+	}).Preload("Agent").Find(&agents).Error
+	if err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
+		return nil, constant.ErrDatabaseError
+	}
+	return agents, nil
+}
+
+func (s *applicationService) AddApplicationAgent(ctx context.Context, applicationID, agentID uint64) error {
+	if err := s.db.Create(&model.ApplicationAgent{
+		ApplicationID: applicationID,
+		AgentID:       agentID,
+	}).Error; err != nil {
+		logger.Error("创建记录失败", logger.F("error", err))
+		return constant.ErrDatabaseError
+	}
+	return nil
+}
+
+func (s *applicationService) DeleteApplicationAgent(ctx context.Context, applicationID, agentID uint64) error {
+	if err := s.db.Where(&model.ApplicationAgent{
+		ApplicationID: applicationID,
+		AgentID:       agentID,
+	}).Delete(&model.ApplicationAgent{}).Error; err != nil {
+		logger.Error("删除记录失败", logger.F("error", err))
+		return constant.ErrDatabaseError
+	}
+	return nil
+}

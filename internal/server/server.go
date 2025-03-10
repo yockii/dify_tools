@@ -36,6 +36,7 @@ type Server struct {
 	dictSrv          service.DictService
 	knowledgeBaseSrv service.KnowledgeBaseService
 	documentSrv      service.DocumentService
+	agentSrv         service.AgentService
 }
 
 func New() *Server {
@@ -110,6 +111,8 @@ func (s *Server) setupServices() {
 
 	s.knowledgeBaseSrv = service.NewKnowledgeBaseService(s.dictSrv, s.applicationSrv)
 	s.documentSrv = service.NewDocumentService(s.dictSrv, s.applicationSrv, s.knowledgeBaseSrv)
+
+	s.agentSrv = service.NewAgentService()
 }
 
 // setupMiddleware 配置中间件
@@ -157,6 +160,9 @@ func (s *Server) setupSystemRoutes() {
 		s.documentSrv,
 		s.logSrv,
 	)
+	sysapi.RegisterAgentHandler(
+		s.agentSrv,
+	)
 
 	// 中间件
 	sysAuthMiddleware := middleware.NewAuthMiddleware(s.authSrv, s.sessionSrv, nil)
@@ -177,6 +183,7 @@ func (s *Server) setupSystemRoutes() {
 
 func (s *Server) setupDifyRoutes() {
 	difyapi.RegisterDatabaseHandler(
+		s.applicationSrv,
 		s.dataSourceSrv,
 		s.tableInfoSrv,
 		s.columnInfoSrv,
@@ -186,7 +193,7 @@ func (s *Server) setupDifyRoutes() {
 		s.knowledgeBaseSrv,
 	)
 
-	difyApiGroup := s.app.Group("/dify_api/v1", middleware.NewAppMiddleware(s.applicationSrv))
+	difyApiGroup := s.app.Group("/dify_api/v1")
 	// 注册用户路由
 	for _, handler := range difyapi.Handlers {
 		handler.RegisterRoutes(difyApiGroup)

@@ -292,7 +292,7 @@ func InitData(db *gorm.DB) error {
 
 			{
 
-				if err := tx.Model(&Dict{
+				if err := tx.Where(&Dict{
 					Code:     constant.DictCodeDifyBaseUrl,
 					ParentID: difyDict.ID,
 				}).Attrs(&Dict{
@@ -302,13 +302,12 @@ func InitData(db *gorm.DB) error {
 				}).FirstOrCreate(&Dict{}).Error; err != nil {
 					return fmt.Errorf("create dict failed: %v", err)
 				}
-				if err := tx.Model(&Dict{
-					Code:     constant.DictCodeDifyDatasetsToken,
+				if err := tx.Where(&Dict{
+					Code:     constant.DictCodeDifyToken,
 					ParentID: difyDict.ID,
 				}).Attrs(&Dict{
-					Name:  "DIFY数据集密钥",
-					Value: "",
-					Sort:  1,
+					Name: "DIFY密钥",
+					Sort: 1,
 				}).FirstOrCreate(&Dict{}).Error; err != nil {
 					return fmt.Errorf("create dict failed: %v", err)
 				}
@@ -317,11 +316,19 @@ func InitData(db *gorm.DB) error {
 
 		// 内嵌代理数据初始化
 		{
-			if err := tx.Model(&Agent{
+			if err := tx.Where(&Agent{
 				Code: InnerAgentCodeSqlBuilder,
 				Type: AgentTypeEmbed,
 			}).Attrs(&Agent{
 				Name: InnerAgentNameSqlBuilder,
+			}).FirstOrCreate(&Agent{}).Error; err != nil {
+				return fmt.Errorf("create agent failed: %v", err)
+			}
+			if err := tx.Where(&Agent{
+				Code: InnerAgentCodeCommonChatFlow,
+				Type: AgentTypeApplication,
+			}).Attrs(&Agent{
+				Name: InnerAgentNameCommonChatFlow,
 			}).FirstOrCreate(&Agent{}).Error; err != nil {
 				return fmt.Errorf("create agent failed: %v", err)
 			}

@@ -8,6 +8,7 @@ import (
 // 自定义错误
 var (
 	// 通用错误
+	ErrInternalError     = errors.New("内部错误")
 	ErrInvalidParams     = errors.New("参数错误")
 	ErrUnauthorized      = errors.New("未授权")
 	ErrForbidden         = errors.New("禁止访问")
@@ -35,6 +36,8 @@ var (
 func GetErrorCode(err error) int {
 	switch err {
 	// 通用错误
+	case ErrInternalError:
+		return http.StatusInternalServerError
 	case ErrInvalidParams:
 		return http.StatusBadRequest
 	case ErrUnauthorized:

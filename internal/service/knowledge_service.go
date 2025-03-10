@@ -112,7 +112,7 @@ func (s *knowledgeBaseService) GetDifyKnowledgeBaseClient(ctx context.Context) (
 			return nil, constant.ErrDictNotConfigured
 		}
 		difyBaseUrl := difyBaseUrlDict.Value
-		difyDatasetsTokenDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDatasetsToken)
+		difyDatasetsTokenDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyToken)
 		if err != nil {
 			return nil, err
 		}

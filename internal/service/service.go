@@ -79,6 +79,9 @@ type SessionService interface {
 type ApplicationService interface {
 	BaseService[*model.Application]
 	GetByApiKey(ctx context.Context, apiKey string) (*model.Application, error)
+	ApplicationAgents(ctx context.Context, id uint64) ([]*model.ApplicationAgent, error)
+	AddApplicationAgent(ctx context.Context, applicationID, agentID uint64) error
+	DeleteApplicationAgent(ctx context.Context, applicationID, agentID uint64) error
 }
 
 type DataSourceService interface {
@@ -104,6 +107,10 @@ type KnowledgeBaseService interface {
 type DocumentService interface {
 	BaseService[*model.Document]
 	AddDocument(ctx context.Context, document *model.Document, fileHeader *multipart.FileHeader) (*model.KnowledgeBase, error)
+}
+
+type AgentService interface {
+	BaseService[*model.Agent]
 }
 
 // /////////////////////////////

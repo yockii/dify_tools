@@ -7,6 +7,6 @@ const (
 )
 
 const (
-	DictCodeDifyBaseUrl       = "dify_base_url"
-	DictCodeDifyDatasetsToken = "dify_datasets_token"
+	DictCodeDifyBaseUrl = "dify_base_url"
+	DictCodeDifyToken   = "dify_token"
 )

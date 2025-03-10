@@ -13,11 +13,13 @@ const (
 )
 
 const (
-	InnerAgentCodeSqlBuilder = "sql_builder"
+	InnerAgentCodeSqlBuilder     = "sql_builder"
+	InnerAgentCodeCommonChatFlow = "common_chat_flow"
 )
 
 const (
-	InnerAgentNameSqlBuilder = "SQL构建器"
+	InnerAgentNameSqlBuilder     = "SQL构建器"
+	InnerAgentNameCommonChatFlow = "通用聊天流程"
 )
 
 type Agent struct {
@@ -42,8 +44,10 @@ func (a *Agent) BeforeCreate(tx *gorm.DB) error {
 
 type ApplicationAgent struct {
 	BaseModel
-	ApplicationID uint64 `json:"applicationId,string" gorm:"index;not null"`
-	AgentID       uint64 `json:"agentId,string" gorm:"index;not null"`
+	ApplicationID uint64       `json:"applicationId,string" gorm:"index;not null"`
+	AgentID       uint64       `json:"agentId,string" gorm:"index;not null"`
+	Agent         *Agent       `json:"agent" gorm:"foreignKey:AgentID;references:ID"`
+	Application   *Application `json:"application" gorm:"foreignKey:ApplicationID;references:ID"`
 }
 
 func (a *ApplicationAgent) TableComment() string {

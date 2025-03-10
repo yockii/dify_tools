@@ -66,6 +66,7 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 	qj := gjson.Parse(req.Query)
 	ak := qj.Get("app_secret").String()
 	customID := qj.Get("custom_id").String()
+	query := qj.Get("query").String()
 	if ak == "" && customID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error_code": 400,
@@ -120,7 +121,7 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 		})
 	}
 
-	resp, err := kbClient.Retrieve(knowledgeBase.OuterID, req.Query, req.RetrievalSetting.TopK, req.RetrievalSetting.ScoreThreshold)
+	resp, err := kbClient.Retrieve(knowledgeBase.OuterID, query, req.RetrievalSetting.TopK, req.RetrievalSetting.ScoreThreshold)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error_code": 500,

@@ -68,6 +68,12 @@ func (h *AppHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Ha
 		dataSources.Post("/update_column", h.UpdateDataSourceColumn)
 		dataSources.Post("/delete_column", h.DeleteDataSourceColumn)
 	}
+
+	agent := apps.Group("/agent")
+	{
+		agent.Post("/new", h.NewApplicationAgent)
+		agent.Get("/list", h.GetApplicationAgentList)
+	}
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -440,3 +446,69 @@ func (h *AppHandler) DeleteDataSourceColumn(c *fiber.Ctx) error {
 }
 
 //endregion
+
+///////////////////////////////////////////////////////////////////
+//////////               ApplicationAgent                //////////
+//region///////////////////////////////////////////////////////////
+
+// NewApplicationAgent 新建应用代理
+func (h *AppHandler) NewApplicationAgent(c *fiber.Ctx) error {
+	var agent model.ApplicationAgent
+	if err := c.BodyParser(&agent); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if agent.ApplicationID == 0 || agent.AgentID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if err := h.appService.AddApplicationAgent(c.Context(), agent.ApplicationID, agent.AgentID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+
+	// 记录操作日志
+	user := c.Locals("user").(*model.User)
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionNewApplicationAgent, c.IP(), c.Get("User-Agent"))
+
+	return c.JSON(service.OK(agent))
+}
+
+// DeleteApplicationAgent 删除应用代理
+func (h *AppHandler) DeleteApplicationAgent(c *fiber.Ctx) error {
+	var agent model.ApplicationAgent
+	if err := c.BodyParser(&agent); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if agent.ApplicationID == 0 || agent.AgentID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if err := h.appService.DeleteApplicationAgent(c.Context(), agent.ApplicationID, agent.AgentID); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+
+	// 记录操作日志
+	user := c.Locals("user").(*model.User)
+	go h.logService.CreateOperationLog(c.Context(), user.ID, constant.LogActionDeleteApplicationAgent, c.IP(), c.Get("User-Agent"))
+
+	return c.JSON(service.OK(nil))
+}
+
+// GetApplicationAgentList 获取应用代理列表
+func (h *AppHandler) GetApplicationAgentList(c *fiber.Ctx) error {
+	applicationID, err := strconv.ParseUint(c.Query("application_id"), 10, 64)
+	if err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	agents, err := h.appService.ApplicationAgents(c.Context(), applicationID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+
+	return c.JSON(service.OK(agents))
+}

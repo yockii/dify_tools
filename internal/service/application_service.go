@@ -134,3 +134,16 @@ func (s *applicationService) DeleteApplicationAgent(ctx context.Context, applica
 	}
 	return nil
 }
+
+func (s *applicationService) GetApplicationAgent(ctx context.Context, applicationID, agentID uint64) (*model.ApplicationAgent, error) {
+	var agent model.ApplicationAgent
+	err := s.db.Where(&model.ApplicationAgent{
+		AgentID: agentID,
+	}).Where("application_id = ?", applicationID).Preload("Agent").
+		First(&agent).Error
+	if err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
+		return nil, constant.ErrDatabaseError
+	}
+	return &agent, nil
+}

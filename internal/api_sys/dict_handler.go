@@ -138,7 +138,7 @@ func (h *DictHandler) ListByParentCode(c *fiber.Ctx) error {
 
 	parentDict, err := h.dictService.GetByCode(c.Context(), parentCode)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+		return c.Status(constant.GetErrorCode(err)).JSON(service.Error(err))
 	}
 	if parentDict == nil {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrRecordNotFound))

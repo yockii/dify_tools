@@ -82,6 +82,7 @@ type ApplicationService interface {
 	ApplicationAgents(ctx context.Context, id uint64) ([]*model.ApplicationAgent, error)
 	AddApplicationAgent(ctx context.Context, applicationID, agentID uint64) error
 	DeleteApplicationAgent(ctx context.Context, applicationID, agentID uint64) error
+	GetApplicationAgent(ctx context.Context, applicationID, agentID uint64) (*model.ApplicationAgent, error)
 }
 
 type DataSourceService interface {

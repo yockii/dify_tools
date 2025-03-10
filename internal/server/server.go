@@ -163,6 +163,10 @@ func (s *Server) setupSystemRoutes() {
 	sysapi.RegisterAgentHandler(
 		s.agentSrv,
 	)
+	sysapi.RegisterChatHandler(
+		s.dictSrv,
+		s.applicationSrv,
+	)
 
 	// 中间件
 	sysAuthMiddleware := middleware.NewAuthMiddleware(s.authSrv, s.sessionSrv, nil)

@@ -130,13 +130,17 @@ func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.
 	if knowledgeBase.ApplicationID == 0 && knowledgeBase.CustomID == "" {
 		return constant.ErrInvalidParams
 	}
-	app, err := s.applicationService.Get(ctx, knowledgeBase.ApplicationID)
-	if err != nil {
-		logger.Error("获取应用失败", logger.F("err", err))
-		return err
+	appName := "本系统"
+	if knowledgeBase.ApplicationID != 0 {
+		app, err := s.applicationService.Get(ctx, knowledgeBase.ApplicationID)
+		if err != nil {
+			logger.Error("获取应用失败", logger.F("err", err))
+			return err
+		}
+		appName = app.Name
 	}
 	if knowledgeBase.KnowledgeBaseName == "" {
-		knowledgeBase.KnowledgeBaseName = fmt.Sprintf("%s知识库-%s", app.Name, util.NewShortID())
+		knowledgeBase.KnowledgeBaseName = fmt.Sprintf("%s知识库-%s", appName, util.NewShortID())
 	} else if !strings.Contains(knowledgeBase.KnowledgeBaseName, "-") {
 		knowledgeBase.KnowledgeBaseName += "-" + util.NewShortID()
 	}
@@ -146,7 +150,7 @@ func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.
 		return err
 	}
 
-	id, err := kbClient.CreateKnowledgeBase(knowledgeBase.KnowledgeBaseName, app.Name)
+	id, err := kbClient.CreateKnowledgeBase(knowledgeBase.KnowledgeBaseName, appName)
 	if err != nil {
 		return err
 	}
@@ -200,8 +204,7 @@ func (s *knowledgeBaseService) DeleteByApplicationID(ctx context.Context, applic
 func (s *knowledgeBaseService) GetByApplicationIDAndCustomID(ctx context.Context, applicationID uint64, customID string) (*model.KnowledgeBase, error) {
 	var knowledgeBase model.KnowledgeBase
 	err := s.db.
-		Where(&model.KnowledgeBase{ApplicationID: applicationID}).
-		Where("custom_id = ?", customID).
+		Where("application_id = ? AND custom_id = ?", applicationID, customID).
 		First(&knowledgeBase).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

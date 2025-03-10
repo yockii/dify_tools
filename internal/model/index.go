@@ -324,13 +324,23 @@ func InitData(db *gorm.DB) error {
 			}).FirstOrCreate(&Agent{}).Error; err != nil {
 				return fmt.Errorf("create agent failed: %v", err)
 			}
+
+			commonFlowAgent := &Agent{}
 			if err := tx.Where(&Agent{
 				Code: InnerAgentCodeCommonChatFlow,
 				Type: AgentTypeApplication,
 			}).Attrs(&Agent{
 				Name: InnerAgentNameCommonChatFlow,
-			}).FirstOrCreate(&Agent{}).Error; err != nil {
+			}).FirstOrCreate(commonFlowAgent).Error; err != nil {
 				return fmt.Errorf("create agent failed: %v", err)
+			}
+
+			// 增加本系统的通用流程代理
+			if err := tx.Where(map[string]interface{}{
+				"agent_id":       commonFlowAgent.ID,
+				"application_id": 0,
+			}).FirstOrCreate(&ApplicationAgent{}).Error; err != nil {
+				return fmt.Errorf("create application agent failed: %v", err)
 			}
 		}
 

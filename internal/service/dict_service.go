@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
@@ -99,6 +100,9 @@ func (s *dictService) GetByCode(ctx context.Context, code string) (*model.Dict, 
 	var dict model.Dict
 	err := s.db.Where(&model.Dict{Code: code}).First(&dict).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, constant.ErrRecordNotFound
+		}
 		logger.Error("查询记录失败", logger.F("error", err))
 		return nil, constant.ErrDatabaseError
 	}

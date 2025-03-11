@@ -83,7 +83,7 @@ func (s *usageService) Create(ctx context.Context, record *model.Usage) error {
 			"date":           record.Date,
 		})
 		if err := query.First(&existsUsage).Error; err != nil {
-			if errors.Is(err, constant.ErrRecordNotFound) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				err = s.db.Create(record).Error
 				if err != nil {
 					logger.Error("创建记录失败", logger.F("error", err))
@@ -101,9 +101,9 @@ func (s *usageService) Create(ctx context.Context, record *model.Usage) error {
 	// 增加token使用信息, 用gorm.Expr
 	if err := s.db.Model(&existsUsage).
 		Updates(map[string]interface{}{
-			"PromptTokens":     gorm.Expr("PromptTokens + ?", record.PromptTokens),
-			"CompletionTokens": gorm.Expr("CompletionTokens + ?", record.CompletionTokens),
-			"TotalTokens":      gorm.Expr("TotalTokens + ?", record.TotalTokens),
+			"PromptTokens":     gorm.Expr("prompt_tokens + ?", record.PromptTokens),
+			"CompletionTokens": gorm.Expr("completion_tokens + ?", record.CompletionTokens),
+			"TotalTokens":      gorm.Expr("total_tokens + ?", record.TotalTokens),
 		}).Error; err != nil {
 		logger.Error("更新记录失败", logger.F("error", err))
 		return constant.ErrDatabaseError

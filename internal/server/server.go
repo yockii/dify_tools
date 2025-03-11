@@ -114,6 +114,7 @@ func (s *Server) setupServices() {
 	s.documentSrv = service.NewDocumentService(s.dictSrv, s.applicationSrv, s.knowledgeBaseSrv)
 
 	s.agentSrv = service.NewAgentService()
+	s.usageSrv = service.NewUsageService()
 }
 
 // setupMiddleware 配置中间件

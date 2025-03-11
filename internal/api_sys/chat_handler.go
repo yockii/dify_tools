@@ -36,6 +36,7 @@ func (h *ChatHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.H
 	{
 		chatRouter.Post("/send", h.SendMessage)
 		chatRouter.Get("/list", h.GetSessionList)
+		chatRouter.Get("/history", h.GetSessionHistory)
 	}
 }
 
@@ -173,4 +174,43 @@ func (h *ChatHandler) GetDifyChatClient(ctx context.Context) (*dify.ChatClient, 
 		chatClient = dify.InitDefaultChatClient(difyBaseUrl, difyToken)
 	}
 	return chatClient, nil
+}
+
+func (h *ChatHandler) GetSessionHistory(c *fiber.Ctx) error {
+	user := c.Locals("user").(*model.User)
+	if user == nil {
+		logger.Error("获取用户信息失败", logger.F("err", "user is nil"))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrUnauthorized))
+	}
+
+	chatClient, err := h.GetDifyChatClient(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+	}
+
+	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), 0, 0)
+	if err != nil {
+		logger.Error("获取应用代理失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+	apiSecret := ""
+	if appAgent != nil {
+		apiSecret = appAgent.Agent.ApiSecret
+	}
+
+	conversationID := c.Query("conversation_id")
+	if conversationID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+	firstID := c.Query("first_id")
+
+	limit := c.QueryInt("limit", 20)
+
+	historyData, err := chatClient.GetConversationHistory(conversationID, strconv.FormatUint(user.ID, 10), firstID, limit, apiSecret)
+	if err != nil {
+		logger.Error("获取会话历史失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	return c.JSON(service.OK(historyData))
 }

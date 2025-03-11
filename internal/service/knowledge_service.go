@@ -156,7 +156,7 @@ func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.
 	}
 	knowledgeBase.OuterID = id
 
-	if err := s.Create(ctx, knowledgeBase); err != nil {
+	if err := s.db.Create(knowledgeBase).Error; err != nil {
 		logger.Error("创建知识库失败", logger.F("err", err))
 		return constant.ErrDatabaseError
 	}

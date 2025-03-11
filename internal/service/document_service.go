@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"mime/multipart"
 
 	"github.com/tidwall/gjson"
@@ -80,6 +81,18 @@ func (s *documentService) BuildCondition(query *gorm.DB, condition *model.Docume
 		query = query.Where("status = ?", condition.Status)
 	}
 	return query
+}
+
+func (s *documentService) GetDocument(ctx context.Context, condition *model.Document) (*model.Document, error) {
+	var document model.Document
+	if err := s.db.Where(condition).First(&document).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		logger.Error("查询文档失败", logger.F("error", err))
+		return nil, constant.ErrDatabaseError
+	}
+	return &document, nil
 }
 
 func (s *documentService) AddDocument(ctx context.Context, document *model.Document, fileHeader *multipart.FileHeader) (*model.KnowledgeBase, error) {

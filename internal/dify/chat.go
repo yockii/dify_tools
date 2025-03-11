@@ -210,3 +210,51 @@ func (c *ChatClient) SendChatMessage(req *ChatMessageRequest, apiSecret string, 
 		return body, nil
 	}
 }
+
+func (c *ChatClient) GetConversationHistory(conversationID, customID, firstID string, limit int, apiSecret string) (map[string]interface{}, error) {
+	req, err := http.NewRequest("GET", c.baseUrl+"/messages", nil)
+	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
+		return nil, err
+	}
+
+	if apiSecret != "" {
+		req.Header.Set("Authorization", "Bearer "+apiSecret)
+	} else if c.defaultAPISecret != "" {
+		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
+	} else {
+		logger.Error("未提供API密钥")
+		return nil, fmt.Errorf("未提供API密钥")
+	}
+
+	q := req.URL.Query()
+	q.Add("conversation_id", conversationID)
+	if customID != "" {
+		q.Add("user", customID)
+	}
+	if firstID != "" {
+		q.Add("first_id", firstID)
+	}
+	if limit > 0 {
+		q.Add("limit", fmt.Sprintf("%d", limit))
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
+		return nil, err
+	}
+	defer resp.Body.Close()
+	response, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
+		return nil, err
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(response, &result); err != nil {
+		logger.Error("解析响应失败", logger.F("err", err))
+		return nil, err
+	}
+	return result, nil
+}

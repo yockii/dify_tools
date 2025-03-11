@@ -24,9 +24,9 @@ func RegisterDocumentHandler(
 }
 
 func (h *DocumentHandler) RegisterRoutes(router fiber.Router) {
-	router.Post("/add_document", h.AddDocument)
-	router.Get("/document_status", h.DocumentStatus)
-	router.Post("/delete_document", h.DeleteDocument)
+	router.Post("/document/add", h.AddDocument)
+	router.Get("/document/status", h.DocumentStatus)
+	router.Post("/document/delete", h.DeleteDocument)
 }
 
 func (h *DocumentHandler) AddDocument(c *fiber.Ctx) error {
@@ -73,5 +73,33 @@ func (h *DocumentHandler) DocumentStatus(c *fiber.Ctx) error {
 }
 
 func (h *DocumentHandler) DeleteDocument(c *fiber.Ctx) error {
-	return nil
+	application, ok := c.Locals("application").(*model.Application)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
+	}
+
+	var document model.Document
+	if err := c.BodyParser(&document); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if document.ID == 0 && document.OuterID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	document.ApplicationID = application.ID
+	doc, err := h.documentService.GetDocument(c.Context(), &document)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+	if doc == nil {
+		return c.Status(fiber.StatusNotFound).JSON(service.Error(constant.ErrRecordNotFound))
+	}
+
+	err = h.documentService.Delete(c.Context(), doc.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+
+	return c.JSON(service.OK(true))
 }

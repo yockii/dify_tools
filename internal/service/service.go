@@ -107,6 +107,7 @@ type KnowledgeBaseService interface {
 
 type DocumentService interface {
 	BaseService[*model.Document]
+	GetDocument(ctx context.Context, condition *model.Document) (*model.Document, error)
 	AddDocument(ctx context.Context, document *model.Document, fileHeader *multipart.FileHeader) (*model.KnowledgeBase, error)
 }
 

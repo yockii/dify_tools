@@ -68,6 +68,9 @@ func (c *KnowledgeBaseClient) CreateDocumentByText(ID, docName, docContent strin
 	if err != nil {
 		return "", err
 	}
+
+	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		logger.Error("请求失败", logger.F("err", err))
@@ -134,7 +137,7 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader *multip
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", c.baseUrl+"/datasets/"+ID+"/documents/create-by-file", fileBody)
+	req, err := http.NewRequest("POST", c.baseUrl+"/datasets/"+ID+"/document/create-by-file", fileBody)
 	if err != nil {
 		logger.Error("创建请求失败", logger.F("err", err))
 		return "", err
@@ -163,6 +166,7 @@ func (c *KnowledgeBaseClient) DeleteDocument(ID, documentID string) error {
 		logger.Error("创建请求失败", logger.F("err", err))
 		return err
 	}
+	req.Header.Set("Content-Type", "application/json")
 	if c.defaultAPISecret != "" {
 		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
 	}
@@ -195,6 +199,9 @@ func (c *KnowledgeBaseClient) CreateKnowledgeBase(name, description string) (str
 	if err != nil {
 		return "", err
 	}
+
+	req.Header.Set("Content-Type", "application/json")
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		logger.Error("请求失败", logger.F("err", err))
@@ -220,6 +227,8 @@ func (c *KnowledgeBaseClient) DeleteKnowledgeBase(ID string) error {
 	if c.defaultAPISecret != "" {
 		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		logger.Error("请求失败", logger.F("err", err))
@@ -241,6 +250,8 @@ func (c *KnowledgeBaseClient) DocumentBatchIndexingStatus(ID, batchID string) (s
 	if c.defaultAPISecret != "" {
 		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		logger.Error("请求失败", logger.F("err", err))
@@ -278,6 +289,8 @@ func (c *KnowledgeBaseClient) Retrieve(ID, query string, topK int, scoreThreshol
 	if err != nil {
 		return "", err
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		logger.Error("请求失败", logger.F("err", err))

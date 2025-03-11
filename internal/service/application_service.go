@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
@@ -67,8 +68,13 @@ func (s *applicationService) GetByApiKey(ctx context.Context, apiKey string) (*m
 		return app, nil
 	}
 	var app model.Application
-	err := s.db.Where(&model.Application{APIKey: apiKey}).First(&app).Error
+	err := s.db.Where(map[string]interface{}{
+		"api_key": apiKey,
+	}).First(&app).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		logger.Error("查询记录失败", logger.F("error", err))
 		return nil, constant.ErrDatabaseError
 	}

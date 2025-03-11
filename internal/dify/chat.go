@@ -199,6 +199,12 @@ func (c *ChatClient) SendChatMessage(req *ChatMessageRequest, apiSecret string, 
 			return nil, err
 		}
 
+		// 发送一个结束信号给streamCallback
+		if err := streamCallback([]byte(`{"event":"end"}`)); err != nil {
+			logger.Error("发送结束信号失败", logger.F("err", err))
+			return nil, err
+		}
+
 		return fullResponse.Bytes(), nil
 	} else {
 		// 阻塞式响应，直接读取完整响应

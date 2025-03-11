@@ -2,6 +2,7 @@ package sysapi
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"strconv"
 
@@ -100,6 +101,20 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 
 	c.Status(fiber.StatusOK).Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
 		_, err = chatClient.SendChatMessage(chatMessageRequest, apiSecret, func(data []byte) error {
+			// 检查是否是结束信号
+			if bytes.Contains(data, []byte(`"event":"end"`)) {
+				// 这是结束信号，发送一个最终的SSE消息给客户端表示流结束
+				if _, err := w.Write([]byte("data: {\"event\":\"done\"}\n\n")); err != nil {
+					logger.Error("发送结束信号失败", logger.F("err", err))
+					return err
+				}
+				if err := w.Flush(); err != nil {
+					logger.Error("发送结束信号失败", logger.F("err", err))
+					return err
+				}
+				return nil
+			}
+
 			go h.usageService.CreateByEndMessage(0, string(data))
 
 			if _, err := w.Write(append([]byte("data: "), data...)); err != nil {

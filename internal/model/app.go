@@ -115,12 +115,12 @@ func (c *ColumnInfo) BeforeCreate(tx *gorm.DB) error {
 // Usage 使用统计
 type Usage struct {
 	BaseModel
-	ApplicationID uint64    `json:"applicationId,string" gorm:"index;not null"`
-	Date          string    `json:"date" gorm:"type:varchar(10);index;not null"` // YYYY-MM-DD
-	Requests      int64     `json:"requests" gorm:"type:bigint;default:0"`
-	Tokens        int64     `json:"tokens" gorm:"type:bigint;default:0"`
-	Errors        int64     `json:"errors" gorm:"type:bigint;default:0"`
-	UpdatedAt     time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
+	ApplicationID    uint64    `json:"applicationId,string" gorm:"index;not null"`
+	Date             string    `json:"date" gorm:"type:varchar(10);index;not null"` // YYYY-MM-DD
+	PromptTokens     int       `json:"promptTokens" gorm:"type:int;default:0;not null"`
+	CompletionTokens int       `json:"completionTokens" gorm:"type:int;default:0;not null"`
+	TotalTokens      int       `json:"totalTokens" gorm:"type:int;default:0;not null"`
+	UpdatedAt        time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`
 }
 
 func (u *Usage) TableComment() string {

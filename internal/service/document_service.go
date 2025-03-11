@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"mime/multipart"
+	"time"
 
 	"github.com/tidwall/gjson"
 	"github.com/yockii/dify_tools/internal/constant"
@@ -140,31 +141,71 @@ func (s *documentService) AddDocument(ctx context.Context, document *model.Docum
 	document.OuterID = respJson.Get("document.id").String()
 	document.Batch = respJson.Get("batch").String()
 	status := respJson.Get("document.display_status").String()
-	switch status {
-	case "queuing", "waiting":
-		document.Status = 1
-	case "paused":
-		document.Status = 2
-	case "parsing", "cleaning", "splitting", "indexing":
-		document.Status = 3
-	case "error":
-		document.Status = 4
-	case "available":
-		document.Status = 5
-	case "disabled":
-		document.Status = 6
-	case "archived":
-		document.Status = 7
-	default:
-		document.Status = 5
-	}
+	document.Status = s.transferDocumentStatus(status)
 
 	if err := s.Create(ctx, document); err != nil {
 		logger.Error("创建文档失败", logger.F("err", err))
 		return nil, constant.ErrDatabaseError
 	}
 
+	go s.RefreshDocumentStatusUntil(kb.ID, kb.OuterID, document.Batch, document.Status, 5)
+
 	return kb, nil
+}
+
+// 异步处理
+func (s *documentService) RefreshDocumentStatusUntil(knowledgeBaseID uint64, datasetID, batch string, currentStatus, utilStatus int) {
+	if currentStatus == utilStatus {
+		return
+	}
+	kbClient, err := s.knowledgeBaseService.GetDifyKnowledgeBaseClient(context.Background())
+	if err != nil {
+		logger.Error("获取dify客户端失败", logger.F("err", err))
+		return
+	}
+	resp, err := kbClient.DocumentBatchIndexingStatus(datasetID, batch)
+	if err != nil {
+		logger.Error("获取文档状态失败", logger.F("err", err))
+		// 等待一段时间后重试
+		time.Sleep(time.Second * 15)
+		s.RefreshDocumentStatusUntil(knowledgeBaseID, datasetID, batch, currentStatus, utilStatus)
+		return
+	}
+	status := s.transferDocumentStatus(resp)
+	// 更新数据库
+	if err = s.db.Where(map[string]interface{}{
+		"knowledge_base_id": knowledgeBaseID,
+		"batch":             batch,
+	}).Updates(&model.Document{
+		Status: status,
+	}).Error; err != nil {
+		logger.Error("更新文档状态失败", logger.F("err", err))
+	}
+	if status != utilStatus {
+		time.Sleep(time.Second * 15)
+		s.RefreshDocumentStatusUntil(knowledgeBaseID, datasetID, batch, status, utilStatus)
+	}
+}
+
+func (s *documentService) transferDocumentStatus(status string) int {
+	switch status {
+	case "queuing", "waiting":
+		return 1
+	case "paused":
+		return 2
+	case "parsing", "cleaning", "splitting", "indexing":
+		return 3
+	case "error":
+		return 4
+	case "available":
+		return 5
+	case "disabled":
+		return 6
+	case "archived":
+		return 7
+	default:
+		return 5
+	}
 }
 
 func (s *documentService) Delete(ctx context.Context, id uint64) error {

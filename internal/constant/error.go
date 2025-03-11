@@ -24,6 +24,7 @@ var (
 	ErrSerializeError    = errors.New("序列化错误")
 	ErrDeserializeError  = errors.New("反序列化错误")
 	ErrCacheError        = errors.New("缓存错误")
+	ErrMethodNotAllow    = errors.New("方法不允许")
 
 	// 角色相关错误
 	ErrRoleInUse = errors.New("角色正在使用")
@@ -68,6 +69,8 @@ func GetErrorCode(err error) int {
 		return http.StatusInternalServerError
 	case ErrCacheError:
 		return http.StatusInternalServerError
+	case ErrMethodNotAllow:
+		return http.StatusMethodNotAllowed
 
 	// 角色相关错误
 	case ErrRoleInUse:

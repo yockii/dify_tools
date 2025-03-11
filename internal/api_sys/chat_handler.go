@@ -17,15 +17,18 @@ import (
 type ChatHandler struct {
 	dictService        service.DictService
 	applicationService service.ApplicationService
+	usageService       service.UsageService
 }
 
 func RegisterChatHandler(
 	dictService service.DictService,
 	applicationService service.ApplicationService,
+	usageService service.UsageService,
 ) {
 	handler := &ChatHandler{
 		dictService:        dictService,
 		applicationService: applicationService,
+		usageService:       usageService,
 	}
 	Handlers = append(Handlers, handler)
 }
@@ -37,6 +40,7 @@ func (h *ChatHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.H
 		chatRouter.Post("/send", h.SendMessage)
 		chatRouter.Get("/list", h.GetSessionList)
 		chatRouter.Get("/history", h.GetSessionHistory)
+		chatRouter.Post("/stop", h.StopChatFlow)
 	}
 }
 
@@ -96,6 +100,8 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 
 	c.Status(fiber.StatusOK).Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
 		_, err = chatClient.SendChatMessage(chatMessageRequest, apiSecret, func(data []byte) error {
+			go h.usageService.CreateByEndMessage(0, string(data))
+
 			if _, err := w.Write(append([]byte("data: "), data...)); err != nil {
 				logger.Error("发送消息失败", logger.F("err", err))
 				return err
@@ -116,6 +122,47 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		}
 	}))
 	return nil
+}
+
+type StopStreamingChatRequest struct {
+	TaskID string `json:"task_id"`
+}
+
+func (h *ChatHandler) StopChatFlow(c *fiber.Ctx) error {
+	user := c.Locals("user").(*model.User)
+	if user == nil {
+		logger.Error("获取用户信息失败", logger.F("err", "user is nil"))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrUnauthorized))
+	}
+
+	var req StopStreamingChatRequest
+	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析请求参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if req.TaskID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	chatClient, err := h.GetDifyChatClient(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+	}
+
+	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), 0, 0)
+	if err != nil {
+		logger.Error("获取应用代理失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	err = chatClient.StopStreamingChat(req.TaskID, strconv.FormatUint(user.ID, 10), appAgent.Agent.ApiSecret)
+	if err != nil {
+		logger.Error("停止会话失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	return c.JSON(service.OK(true))
 }
 
 func (h *ChatHandler) GetSessionList(c *fiber.Ctx) error {

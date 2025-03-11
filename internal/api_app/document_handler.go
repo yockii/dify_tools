@@ -5,6 +5,7 @@ import (
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
+	"github.com/yockii/dify_tools/pkg/logger"
 )
 
 type DocumentHandler struct {
@@ -69,7 +70,29 @@ func (h *DocumentHandler) AddDocument(c *fiber.Ctx) error {
 }
 
 func (h *DocumentHandler) DocumentStatus(c *fiber.Ctx) error {
-	return nil
+	application, ok := c.Locals("application").(*model.Application)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
+	}
+	var document model.Document
+	if err := c.BodyParser(&document); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if document.ID == 0 && document.OuterID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+	document.ApplicationID = application.ID
+	doc, err := h.documentService.GetDocument(c.Context(), &document)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+	if doc == nil {
+		return c.Status(fiber.StatusNotFound).JSON(service.Error(constant.ErrRecordNotFound))
+	}
+
+	return c.JSON(service.OK(doc))
 }
 
 func (h *DocumentHandler) DeleteDocument(c *fiber.Ctx) error {
@@ -80,6 +103,7 @@ func (h *DocumentHandler) DeleteDocument(c *fiber.Ctx) error {
 
 	var document model.Document
 	if err := c.BodyParser(&document); err != nil {
+		logger.Error("解析字典参数失败", logger.F("err", err))
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 

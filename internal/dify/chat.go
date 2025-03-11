@@ -258,3 +258,31 @@ func (c *ChatClient) GetConversationHistory(conversationID, customID, firstID st
 	}
 	return result, nil
 }
+
+func (c *ChatClient) StopStreamingChat(taskID, customID, apiSecret string) error {
+	reqBody := fmt.Sprintf(`{"user": "%s"}`, customID)
+
+	req, err := http.NewRequest("POST", c.baseUrl+"/chat-messages"+taskID+"/stop", bytes.NewBuffer([]byte(reqBody)))
+	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if apiSecret != "" {
+		req.Header.Set("Authorization", "Bearer "+apiSecret)
+	} else if c.defaultAPISecret != "" {
+		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
+	} else {
+		logger.Error("未提供API密钥")
+		return fmt.Errorf("未提供API密钥")
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}

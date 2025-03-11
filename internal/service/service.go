@@ -115,6 +115,11 @@ type AgentService interface {
 	BaseService[*model.Agent]
 }
 
+type UsageService interface {
+	BaseService[*model.Usage]
+	CreateByEndMessage(applicationID uint64, endMessage string)
+}
+
 // /////////////////////////////
 // Response 通用响应结构
 type Response struct {

@@ -37,6 +37,7 @@ type Server struct {
 	knowledgeBaseSrv service.KnowledgeBaseService
 	documentSrv      service.DocumentService
 	agentSrv         service.AgentService
+	usageSrv         service.UsageService
 }
 
 func New() *Server {
@@ -166,6 +167,7 @@ func (s *Server) setupSystemRoutes() {
 	sysapi.RegisterChatHandler(
 		s.dictSrv,
 		s.applicationSrv,
+		s.usageSrv,
 	)
 
 	// 中间件

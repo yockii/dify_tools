@@ -312,35 +312,37 @@ func InitData(db *gorm.DB) error {
 					return fmt.Errorf("create dict failed: %v", err)
 				}
 			}
-		}
 
-		// 内嵌代理数据初始化
-		{
-			if err := tx.Where(&Agent{
-				Code: InnerAgentCodeSqlBuilder,
-				Type: AgentTypeEmbed,
-			}).Attrs(&Agent{
-				Name: InnerAgentNameSqlBuilder,
-			}).FirstOrCreate(&Agent{}).Error; err != nil {
-				return fmt.Errorf("create agent failed: %v", err)
-			}
+			// 内嵌代理数据初始化
+			{
+				commonFlowAgent := &Agent{}
+				if err := tx.Where(&Agent{
+					Code: InnerAgentCodeCommonChatFlow,
+					Type: AgentTypeApplication,
+				}).Attrs(&Agent{
+					Name: InnerAgentNameCommonChatFlow,
+				}).FirstOrCreate(commonFlowAgent).Error; err != nil {
+					return fmt.Errorf("create agent failed: %v", err)
+				}
 
-			commonFlowAgent := &Agent{}
-			if err := tx.Where(&Agent{
-				Code: InnerAgentCodeCommonChatFlow,
-				Type: AgentTypeApplication,
-			}).Attrs(&Agent{
-				Name: InnerAgentNameCommonChatFlow,
-			}).FirstOrCreate(commonFlowAgent).Error; err != nil {
-				return fmt.Errorf("create agent failed: %v", err)
-			}
+				// 增加字典数据-默认代理ID
+				if err := tx.Model(&Dict{}).Where(&Dict{
+					Code: constant.DictCodeDifyDefaultAgentID,
+				}).Assign(&Dict{
+					Name:     "默认代理ID",
+					Value:    fmt.Sprintf("%d", commonFlowAgent.ID),
+					ParentID: difyDict.ID,
+				}).FirstOrCreate(&Dict{}).Error; err != nil {
+					return fmt.Errorf("update dict failed: %v", err)
+				}
 
-			// 增加本系统的通用流程代理
-			if err := tx.Where(map[string]interface{}{
-				"agent_id":       commonFlowAgent.ID,
-				"application_id": 0,
-			}).FirstOrCreate(&ApplicationAgent{}).Error; err != nil {
-				return fmt.Errorf("create application agent failed: %v", err)
+				// 增加本系统的通用流程代理
+				if err := tx.Where(map[string]any{
+					"agent_id":       commonFlowAgent.ID,
+					"application_id": 0,
+				}).FirstOrCreate(&ApplicationAgent{}).Error; err != nil {
+					return fmt.Errorf("create application agent failed: %v", err)
+				}
 			}
 		}
 

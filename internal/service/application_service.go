@@ -12,12 +12,15 @@ import (
 
 type applicationService struct {
 	*BaseServiceImpl[*model.Application]
-	appMap map[string]*model.Application
+	dictService DictService
+	appMap      map[string]*model.Application
 }
 
-func NewApplicationService() *applicationService {
+func NewApplicationService(
+	dictService DictService,
+) *applicationService {
 	srv := new(applicationService)
-	srv.BaseServiceImpl = NewBaseService[*model.Application](BaseServiceConfig[*model.Application]{
+	srv.BaseServiceImpl = NewBaseService(BaseServiceConfig[*model.Application]{
 		NewModel:       srv.NewModel,
 		CheckDuplicate: srv.CheckDuplicate,
 		DeleteCheck:    srv.DeleteCheck,
@@ -25,6 +28,7 @@ func NewApplicationService() *applicationService {
 		UpdateHook:     srv.UpdateHook,
 		DeleteHook:     srv.DeleteHook,
 	})
+	srv.dictService = dictService
 	srv.appMap = make(map[string]*model.Application)
 
 	return srv
@@ -142,6 +146,24 @@ func (s *applicationService) DeleteApplicationAgent(ctx context.Context, applica
 }
 
 func (s *applicationService) GetApplicationAgent(ctx context.Context, applicationID, agentID uint64) (*model.ApplicationAgent, error) {
+	if agentID == 0 {
+		// 未指定代理，使用默认代理
+		defaultAgentIDDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDefaultAgentID)
+		if err != nil {
+			logger.Error("获取字典值失败", logger.F("err", err))
+			return nil, err
+		}
+		if defaultAgentIDDict == nil || defaultAgentIDDict.Value == "" {
+			logger.Warn("未配置默认代理", logger.F("dict_id", defaultAgentIDDict.ID))
+			return nil, constant.ErrDictNotConfigured
+		}
+		agentID = defaultAgentIDDict.ValueUint64()
+		if agentID == 0 {
+			logger.Warn("默认代理ID配置错误", logger.F("dict_id", defaultAgentIDDict.ID))
+			return nil, constant.ErrDictNotConfigured
+		}
+	}
+
 	var agent model.ApplicationAgent
 	err := s.db.Where(&model.ApplicationAgent{
 		AgentID: agentID,

@@ -97,18 +97,18 @@ func (s *Server) gracefulShutdown() {
 // setupServices 配置服务层
 func (s *Server) setupServices() {
 	// 创建服务实例
+	s.dictSrv = service.NewDictService()
+
 	s.userSrv = service.NewUserService()
 	s.roleSrv = service.NewRoleService()
 	s.sessionSrv = service.NewSessionService()
 	s.authSrv = service.NewAuthService(s.userSrv, s.sessionSrv)
 	s.logSrv = service.NewLogService()
 
-	s.applicationSrv = service.NewApplicationService()
+	s.applicationSrv = service.NewApplicationService(s.dictSrv)
 	s.dataSourceSrv = service.NewDataSourceService()
 	s.tableInfoSrv = service.NewTableInfoService()
 	s.columnInfoSrv = service.NewColumnInfoService()
-
-	s.dictSrv = service.NewDictService()
 
 	s.knowledgeBaseSrv = service.NewKnowledgeBaseService(s.dictSrv, s.applicationSrv)
 	s.documentSrv = service.NewDocumentService(s.dictSrv, s.applicationSrv, s.knowledgeBaseSrv)

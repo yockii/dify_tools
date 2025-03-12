@@ -19,6 +19,8 @@ type AppHandler struct {
 
 	knowledgeService service.KnowledgeBaseService
 
+	usageService service.UsageService
+
 	logService service.LogService
 }
 
@@ -28,6 +30,7 @@ func RegisterAppHandler(
 	tableInfoService service.TableInfoService,
 	columnInfoService service.ColumnInfoService,
 	knowledgeService service.KnowledgeBaseService,
+	usageService service.UsageService,
 
 	logService service.LogService,
 ) {
@@ -37,6 +40,7 @@ func RegisterAppHandler(
 		tableInfoService:  tableInfoService,
 		columnInfoService: columnInfoService,
 		knowledgeService:  knowledgeService,
+		usageService:      usageService,
 
 		logService: logService,
 	}
@@ -73,6 +77,11 @@ func (h *AppHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Ha
 	{
 		agent.Post("/new", h.NewApplicationAgent)
 		agent.Get("/list", h.GetApplicationAgentList)
+	}
+
+	usage := apps.Group("/usage")
+	{
+		usage.Get("/list", h.GetApplicationUsageList)
 	}
 }
 
@@ -512,3 +521,33 @@ func (h *AppHandler) GetApplicationAgentList(c *fiber.Ctx) error {
 
 	return c.JSON(service.OK(agents))
 }
+
+//endregion
+
+///////////////////////////////////////////////////////////////////
+//////////               Usage                           //////////
+//region///////////////////////////////////////////////////////////
+
+// GetApplicationUsageList 获取应用使用情况列表
+func (h *AppHandler) GetApplicationUsageList(c *fiber.Ctx) error {
+	var condition model.Usage
+	if err := c.QueryParser(&condition); err != nil {
+		logger.Error("请求参数解析失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	offset := c.QueryInt("offset", 0)
+	limit := c.QueryInt("limit", service.DefaultPageSize)
+	if limit > service.MaxPageSize {
+		limit = service.MaxPageSize
+	}
+
+	list, total, err := h.usageService.List(c.Context(), &condition, offset, limit)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+	}
+
+	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))
+}
+
+//endregion

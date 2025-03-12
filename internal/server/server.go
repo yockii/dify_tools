@@ -151,6 +151,7 @@ func (s *Server) setupSystemRoutes() {
 		s.tableInfoSrv,
 		s.columnInfoSrv,
 		s.knowledgeBaseSrv,
+		s.usageSrv,
 		s.logSrv,
 	)
 	sysapi.RegisterDictHandler(

@@ -14,6 +14,7 @@ type applicationService struct {
 	*BaseServiceImpl[*model.Application]
 	dictService DictService
 	appMap      map[string]*model.Application
+	appAgentMap map[uint64]map[uint64]*model.ApplicationAgent
 }
 
 func NewApplicationService(
@@ -30,6 +31,7 @@ func NewApplicationService(
 	})
 	srv.dictService = dictService
 	srv.appMap = make(map[string]*model.Application)
+	srv.appAgentMap = make(map[uint64]map[uint64]*model.ApplicationAgent)
 
 	return srv
 }
@@ -146,7 +148,20 @@ func (s *applicationService) DeleteApplicationAgent(ctx context.Context, applica
 }
 
 func (s *applicationService) GetApplicationAgent(ctx context.Context, applicationID, agentID uint64) (*model.ApplicationAgent, error) {
-	if agentID == 0 {
+	// 先从缓存中获取
+	if agentMap, ok := s.appAgentMap[applicationID]; ok {
+		if agent, ok := agentMap[agentID]; ok {
+			return agent, nil
+		}
+	} else {
+		s.appAgentMap[applicationID] = make(map[uint64]*model.ApplicationAgent)
+	}
+
+	// 已经确保s.appAgentMap[applicationID]存在
+	agentMap := s.appAgentMap[applicationID]
+	useDefaultAgent := agentID == 0
+
+	if useDefaultAgent {
 		// 未指定代理，使用默认代理
 		defaultAgentIDDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDefaultAgentID)
 		if err != nil {
@@ -172,6 +187,12 @@ func (s *applicationService) GetApplicationAgent(ctx context.Context, applicatio
 	if err != nil {
 		logger.Error("查询记录失败", logger.F("error", err))
 		return nil, constant.ErrDatabaseError
+	}
+
+	agentMap[agentID] = &agent
+	if useDefaultAgent {
+		// 缓存默认代理
+		agentMap[0] = &agent
 	}
 	return &agent, nil
 }

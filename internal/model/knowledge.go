@@ -29,7 +29,7 @@ type Document struct {
 	ApplicationID   uint64 `json:"applicationId,string" gorm:"index;not null"`
 	KnowledgeBaseID uint64 `json:"knowledgeBaseId,string" gorm:"index;not null"`
 	CustomID        string `json:"customId" gorm:"type:varchar(50);not null;index"`
-	FileName        string `json:"fileName" gorm:"type:varchar(50);not null"`
+	FileName        string `json:"fileName" gorm:"type:varchar(200);not null"`
 	FileSize        int64  `json:"fileSize" gorm:"not null"`
 	OuterID         string `json:"outerId" gorm:"type:varchar(50);not null;index"`
 	Batch           string `json:"batch" gorm:"type:varchar(50);not null;index"`

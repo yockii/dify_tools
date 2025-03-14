@@ -12,10 +12,7 @@
             "program": "${workspaceFolder}/cmd/server/main.go",
             "cwd": "${workspaceFolder}",
             "env": {},
-            "args": [
-                "-config",
-                "configs/config.yaml"
-            ]
+            "args": []
         }
     ]
 }

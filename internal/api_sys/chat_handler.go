@@ -48,6 +48,8 @@ func (h *ChatHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.H
 type ChatMessageRequest struct {
 	Query          string `json:"query"`
 	ConversationID string `json:"conversation_id"`
+	AppSecret      string `json:"app_secret"`
+	AgentID        uint64 `json:"agent_id,string,omitzero"`
 }
 
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
@@ -66,12 +68,32 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
+	var appID uint64
+
+	customID := ""
+	appSecret := ""
+	if req.AppSecret == "" {
+		customID = strconv.FormatUint(user.ID, 10)
+	} else {
+		appSecret = req.AppSecret
+		// 获取对应的app
+		app, err := h.applicationService.GetByApiKey(c.Context(), req.AppSecret)
+		if err != nil {
+			logger.Error("获取应用失败", logger.F("err", err))
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+		}
+		if app == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+		appID = app.ID
+	}
+
 	chatMessageRequest := &dify.ChatMessageRequest{
 		User:         strconv.FormatUint(user.ID, 10),
 		ResponseMode: "streaming",
 		Inputs: map[string]interface{}{
-			"custom_id":  strconv.FormatUint(user.ID, 10),
-			"app_secret": "",
+			"custom_id":  customID,
+			"app_secret": appSecret,
 		},
 		Query:            req.Query,
 		ConversationID:   req.ConversationID,
@@ -84,7 +106,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
 	}
 
-	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), 0, 0)
+	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), appID, req.AgentID)
 	if err != nil {
 		logger.Error("获取应用代理失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
@@ -180,6 +202,11 @@ func (h *ChatHandler) StopChatFlow(c *fiber.Ctx) error {
 	return c.JSON(service.OK(true))
 }
 
+type SessionListRequest struct {
+	AppSecret string `json:"app_secret"`
+	AgentID   uint64 `json:"agent_id,string,omitzero"`
+}
+
 func (h *ChatHandler) GetSessionList(c *fiber.Ctx) error {
 	user := c.Locals("user").(*model.User)
 	if user == nil {
@@ -187,12 +214,31 @@ func (h *ChatHandler) GetSessionList(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrUnauthorized))
 	}
 
+	var req SessionListRequest
+	if err := c.QueryParser(&req); err != nil {
+		logger.Error("解析请求参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	var appID uint64
+	if req.AppSecret != "" {
+		app, err := h.applicationService.GetByApiKey(c.Context(), req.AppSecret)
+		if err != nil {
+			logger.Error("获取应用失败", logger.F("err", err))
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+		}
+		if app == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+		appID = app.ID
+	}
+
 	chatClient, err := h.GetDifyChatClient(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
 	}
 
-	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), 0, 0)
+	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), appID, req.AgentID)
 	if err != nil {
 		logger.Error("获取应用代理失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))

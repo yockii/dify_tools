@@ -1,0 +1,1873 @@
+app:
+  description: 通用会话流
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 通用会话流
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/openai_api_compatible:0.0.7@f20c7275bbcf055ec5d170dd5128e341986e2dcba5266d08fd080d4bdf2288f6
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/zhipuai:0.0.6@5e84cc1bad9c331a9253124a60662dd82e9cf11dc7200478b21d23036084d326
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/xinference:0.0.2@04dee9c8396689421df7537f73ebb4b26efbcb7e0b9c32b7f09236e84bb97b3c
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: question-classifier
+      id: 1741765096929-source-1741765170486-target
+      source: '1741765096929'
+      sourceHandle: source
+      target: '1741765170486'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: code
+      id: 1741765170486-1-1741766152847-target
+      selected: false
+      source: '1741765170486'
+      sourceHandle: '1'
+      target: '1741766152847'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 1741766152847-source-1741765392094-target
+      selected: false
+      source: '1741766152847'
+      sourceHandle: source
+      target: '1741765392094'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1741765392094-source-1741766368958-target
+      selected: false
+      source: '1741765392094'
+      sourceHandle: source
+      target: '1741766368958'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1741766368958-source-answer-target
+      selected: false
+      source: '1741766368958'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: tool
+      id: 1741765170486-2-1741766449228-target
+      selected: false
+      source: '1741765170486'
+      sourceHandle: '2'
+      target: '1741766449228'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1741766837035-source-1741765242038-target
+      selected: false
+      source: '1741766837035'
+      sourceHandle: source
+      target: '1741765242038'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: tool
+      id: 1741765170486-1741765201958-1741766869995-target
+      selected: false
+      source: '1741765170486'
+      sourceHandle: '1741765201958'
+      target: '1741766869995'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: llm
+      id: 1741766869995-source-1741766837035-target
+      selected: false
+      source: '1741766869995'
+      sourceHandle: source
+      target: '1741766837035'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1741766449228-source-1741768807507-target
+      selected: false
+      source: '1741766449228'
+      sourceHandle: source
+      target: '1741768807507'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: 1741768807507-source-1741769487876-target
+      selected: false
+      source: '1741768807507'
+      sourceHandle: source
+      target: '1741769487876'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1741769487876-false-1741768954531-target
+      selected: false
+      source: '1741769487876'
+      sourceHandle: 'false'
+      target: '1741768954531'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+      id: 1741769487876-true-1741769572043-target
+      selected: false
+      source: '1741769487876'
+      sourceHandle: 'true'
+      target: '1741769572043'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: parameter-extractor
+      id: 1741769572043-source-1741769710835-target
+      selected: false
+      source: '1741769572043'
+      sourceHandle: source
+      target: '1741769710835'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: code
+      id: 1741769487876-b34dc9c6-7b45-4aec-b0a7-eb0238ca1abf-1741769830218-target
+      selected: false
+      source: '1741769487876'
+      sourceHandle: b34dc9c6-7b45-4aec-b0a7-eb0238ca1abf
+      target: '1741769830218'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: parameter-extractor
+        targetType: variable-aggregator
+      id: 1741769710835-source-1741769903354-target
+      selected: false
+      source: '1741769710835'
+      sourceHandle: source
+      target: '1741769903354'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: variable-aggregator
+      id: 1741769830218-source-1741769903354-target
+      selected: false
+      source: '1741769830218'
+      sourceHandle: source
+      target: '1741769903354'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: variable-aggregator
+        targetType: tool
+      id: 1741769903354-source-1741770006652-target
+      selected: false
+      source: '1741769903354'
+      sourceHandle: source
+      target: '1741770006652'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1741770006652-source-1741770158371-target
+      source: '1741770006652'
+      sourceHandle: source
+      target: '1741770158371'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: tool
+      id: 1741770158371-source-1741771154251-target
+      source: '1741770158371'
+      sourceHandle: source
+      target: '1741771154251'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: llm
+      id: 1741771154251-source-1741770220307-target
+      source: '1741771154251'
+      sourceHandle: source
+      target: '1741770220307'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1741771588603-source-1741770301771-target
+      source: '1741771588603'
+      sourceHandle: source
+      target: '1741770301771'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1741770220307-source-1741771708923-target
+      source: '1741770220307'
+      sourceHandle: source
+      target: '1741771708923'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: 1741771708923-source-1741772323819-target
+      source: '1741771708923'
+      sourceHandle: source
+      target: '1741772323819'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: if-else
+        targetType: tool
+      id: 1741772323819-false-1741771547891-target
+      source: '1741772323819'
+      sourceHandle: 'false'
+      target: '1741771547891'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: answer
+      id: 1741772323819-true-1741772377282-target
+      source: '1741772323819'
+      sourceHandle: 'true'
+      target: '1741772377282'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: 1741771547891-source-1741772549450-target
+      source: '1741771547891'
+      sourceHandle: source
+      target: '1741772549450'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1741772549450-source-1741771588603-target
+      source: '1741772549450'
+      sourceHandle: source
+      target: '1741771588603'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: app_secret
+          max_length: 60
+          options: []
+          required: false
+          type: text-input
+          variable: app_secret
+        - label: custom_id
+          max_length: 60
+          options: []
+          required: false
+          type: text-input
+          variable: custom_id
+      height: 116
+      id: '1741765096929'
+      position:
+        x: 30
+        y: 305
+      positionAbsolute:
+        x: 30
+        y: 305
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1741766368958.text#}}'
+        desc: ''
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 105
+      id: answer
+      position:
+        x: 1550
+        y: 442.5
+      positionAbsolute:
+        x: 1550
+        y: 442.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1'
+          name: 知识库查询
+        - id: '2'
+          name: 数据库查询
+        - id: '1741765201958'
+          name: 直接回复
+        desc: ''
+        instruction: '你需要结合上下文对用户的问题进行精准判断。
+
+          当问题问及政策时，请查阅知识库；当问题涉及系统数据时，请使用数据库查询；其余情况直接回复'
+        instructions: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: glm-4-flash
+          provider: langgenius/zhipuai/zhipuai
+        query_variable_selector:
+        - '1741765096929'
+        - sys.query
+        selected: false
+        title: 问题分类器
+        topics: []
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 210
+      id: '1741765170486'
+      position:
+        x: 334
+        y: 305
+      positionAbsolute:
+        x: 334
+        y: 305
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1741766837035.text#}}'
+        desc: ''
+        selected: false
+        title: 直接回复 3
+        type: answer
+        variables: []
+      height: 105
+      id: '1741765242038'
+      position:
+        x: 1246
+        y: 305
+      positionAbsolute:
+        x: 1246
+        y: 305
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - a5dd248c-9088-475f-b3af-78883c00773c
+        desc: ''
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: bce-reranker-base_v1
+            provider: langgenius/xinference/xinference
+          score_threshold: null
+          top_k: 5
+        query_variable_selector:
+        - '1741766152847'
+        - result
+        retrieval_mode: multiple
+        selected: false
+        title: 知识检索
+        type: knowledge-retrieval
+      height: 92
+      id: '1741765392094'
+      position:
+        x: 942
+        y: 441.5
+      positionAbsolute:
+        x: 942
+        y: 441.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\nfunction main({custom_id, app_secret, query}) {\n    const combine\
+          \ = {\n        custom_id, app_secret, query\n    }\n    return {\n     \
+          \   result: JSON.stringify(combine)\n    }\n}\n"
+        code_language: javascript
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 组装查询变量
+        type: code
+        variables:
+        - value_selector:
+          - '1741765096929'
+          - custom_id
+          variable: custom_id
+        - value_selector:
+          - '1741765096929'
+          - app_secret
+          variable: app_secret
+        - value_selector:
+          - sys
+          - query
+          variable: query
+      height: 54
+      id: '1741766152847'
+      position:
+        x: 638
+        y: 473.5
+      positionAbsolute:
+        x: 638
+        y: 473.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1741765392094'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-ai/DeepSeek-R1
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: 48d687e4-4b57-4016-a4dd-3406f7615ace
+          role: system
+          text: 根据知识库检索结果，回答用户问题，如果没有检索信息，则认为没有相关信息。以下是知识库检索结果：{{#context#}}
+        selected: false
+        title: 知识检索回复
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1741766368958'
+      position:
+        x: 1246
+        y: 450
+      positionAbsolute:
+        x: 1246
+        y: 450
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 应用密钥
+            ja_JP: 应用密钥
+            pt_BR: 应用密钥
+            zh_Hans: 应用密钥
+          label:
+            en_US: Authorization
+            ja_JP: Authorization
+            pt_BR: Authorization
+            zh_Hans: Authorization
+          llm_description: 应用密钥
+          max: null
+          min: null
+          name: Authorization
+          options: []
+          placeholder:
+            en_US: 应用密钥
+            ja_JP: 应用密钥
+            pt_BR: 应用密钥
+            zh_Hans: 应用密钥
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        params:
+          Authorization: ''
+        provider_id: a2558825-4435-4d8a-9087-a6e36c0473a9
+        provider_name: 数据库检索
+        provider_type: api
+        selected: false
+        title: GetDatabasesForApp
+        tool_configurations: {}
+        tool_label: GetDatabasesForApp
+        tool_name: GetDatabasesForApp
+        tool_parameters:
+          Authorization:
+            type: mixed
+            value: '{{#1741765096929.app_secret#}}'
+        type: tool
+      height: 54
+      id: '1741766449228'
+      position:
+        x: 638
+        y: 645.5
+      positionAbsolute:
+        x: 638
+        y: 645.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Qwen/QwQ-32B
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: bc6ccf40-8e6f-4ddf-9971-5e3005516ddc
+          role: system
+          text: "## 任务描述\n当前时间是{{#1741766869995.text#}}，你应该简短精准地回答用户的问题，当用户问及你的身份时，你应该回答[我是小小琪，YOCKII开发的人工智能助手]，当涉及到当前地址时，请使用杭州市西湖区。\n\
+            \n## 输出格式\n请使用标准的markdown格式输出。\n如果涉及到数据展示，尽可能以可视化的方式呈现，可以直接使用mermaid的标准输出图表。\n\
+            ### 示例\n柱状图、折线图等有xy坐标轴的使用xy图：\n```mermaid\nxychart-beta\n    title \"\
+            Sales Revenue\"\n    x-axis [jan, feb, mar, apr, may, jun, jul, aug, sep,\
+            \ oct, nov, dec]\n    y-axis \"Revenue (in $)\" 4000 --> 11000\n    bar\
+            \ [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200, 9200, 8500, 7000,\
+            \ 6000]\n    line [5000, 6000, 7500, 8200, 9500, 10500, 11000, 10200,\
+            \ 9200, 8500, 7000, 6000]\n```\n\n饼图使用pie：\n```mermaid\npie title Pets\
+            \ adopted by volunteers\n    \"Dogs\" : 386\n    \"Cats\" : 85\n    \"\
+            Rats\" : 15\n```\n\n架构图使用architechture-beta：\n```mermaid\narchitecture-beta\n\
+            \    group api(cloud)[API]\n\n    service db(database)[Database] in api\n\
+            \    service disk1(disk)[Storage] in api\n    service disk2(disk)[Storage]\
+            \ in api\n    service server(server)[Server] in api\n\n    db:L -- R:server\n\
+            \    disk1:T -- B:server\n    disk2:T -- B:db\n```"
+        selected: false
+        title: 直接回复大模型
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1741766837035'
+      position:
+        x: 942
+        y: 305
+      positionAbsolute:
+        x: 942
+        y: 305
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: '%Y-%m-%d %H:%M:%S'
+          form: form
+          human_description:
+            en_US: Time format in strftime standard.
+            ja_JP: Time format in strftime standard.
+            pt_BR: Time format in strftime standard.
+            zh_Hans: strftime 标准的时间格式。
+          label:
+            en_US: Format
+            ja_JP: Format
+            pt_BR: Format
+            zh_Hans: 格式
+          llm_description: null
+          max: null
+          min: null
+          name: format
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: UTC
+          form: form
+          human_description:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          label:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          llm_description: null
+          max: null
+          min: null
+          name: timezone
+          options:
+          - label:
+              en_US: UTC
+              ja_JP: UTC
+              pt_BR: UTC
+              zh_Hans: UTC
+            value: UTC
+          - label:
+              en_US: America/New_York
+              ja_JP: America/New_York
+              pt_BR: America/New_York
+              zh_Hans: 美洲/纽约
+            value: America/New_York
+          - label:
+              en_US: America/Los_Angeles
+              ja_JP: America/Los_Angeles
+              pt_BR: America/Los_Angeles
+              zh_Hans: 美洲/洛杉矶
+            value: America/Los_Angeles
+          - label:
+              en_US: America/Chicago
+              ja_JP: America/Chicago
+              pt_BR: America/Chicago
+              zh_Hans: 美洲/芝加哥
+            value: America/Chicago
+          - label:
+              en_US: America/Sao_Paulo
+              ja_JP: America/Sao_Paulo
+              pt_BR: América/São Paulo
+              zh_Hans: 美洲/圣保罗
+            value: America/Sao_Paulo
+          - label:
+              en_US: Asia/Shanghai
+              ja_JP: Asia/Shanghai
+              pt_BR: Asia/Shanghai
+              zh_Hans: 亚洲/上海
+            value: Asia/Shanghai
+          - label:
+              en_US: Asia/Ho_Chi_Minh
+              ja_JP: Asia/Ho_Chi_Minh
+              pt_BR: Ásia/Ho Chi Minh
+              zh_Hans: 亚洲/胡志明市
+            value: Asia/Ho_Chi_Minh
+          - label:
+              en_US: Asia/Tokyo
+              ja_JP: Asia/Tokyo
+              pt_BR: Asia/Tokyo
+              zh_Hans: 亚洲/东京
+            value: Asia/Tokyo
+          - label:
+              en_US: Asia/Dubai
+              ja_JP: Asia/Dubai
+              pt_BR: Asia/Dubai
+              zh_Hans: 亚洲/迪拜
+            value: Asia/Dubai
+          - label:
+              en_US: Asia/Kolkata
+              ja_JP: Asia/Kolkata
+              pt_BR: Asia/Kolkata
+              zh_Hans: 亚洲/加尔各答
+            value: Asia/Kolkata
+          - label:
+              en_US: Asia/Seoul
+              ja_JP: Asia/Seoul
+              pt_BR: Asia/Seoul
+              zh_Hans: 亚洲/首尔
+            value: Asia/Seoul
+          - label:
+              en_US: Asia/Singapore
+              ja_JP: Asia/Singapore
+              pt_BR: Asia/Singapore
+              zh_Hans: 亚洲/新加坡
+            value: Asia/Singapore
+          - label:
+              en_US: Europe/London
+              ja_JP: Europe/London
+              pt_BR: Europe/London
+              zh_Hans: 欧洲/伦敦
+            value: Europe/London
+          - label:
+              en_US: Europe/Berlin
+              ja_JP: Europe/Berlin
+              pt_BR: Europe/Berlin
+              zh_Hans: 欧洲/柏林
+            value: Europe/Berlin
+          - label:
+              en_US: Europe/Moscow
+              ja_JP: Europe/Moscow
+              pt_BR: Europe/Moscow
+              zh_Hans: 欧洲/莫斯科
+            value: Europe/Moscow
+          - label:
+              en_US: Australia/Sydney
+              ja_JP: Australia/Sydney
+              pt_BR: Australia/Sydney
+              zh_Hans: 澳大利亚/悉尼
+            value: Australia/Sydney
+          - label:
+              en_US: Pacific/Auckland
+              ja_JP: Pacific/Auckland
+              pt_BR: Pacific/Auckland
+              zh_Hans: 太平洋/奥克兰
+            value: Pacific/Auckland
+          - label:
+              en_US: Africa/Cairo
+              ja_JP: Africa/Cairo
+              pt_BR: Africa/Cairo
+              zh_Hans: 非洲/开罗
+            value: Africa/Cairo
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: select
+        params:
+          format: ''
+          timezone: ''
+        provider_id: time
+        provider_name: time
+        provider_type: builtin
+        selected: false
+        title: 获取当前时间
+        tool_configurations:
+          format: '%Y-%m-%d %H:%M:%S'
+          timezone: Asia/Shanghai
+        tool_label: 获取当前时间
+        tool_name: current_time
+        tool_parameters: {}
+        type: tool
+      height: 116
+      id: '1741766869995'
+      position:
+        x: 638
+        y: 305
+      positionAbsolute:
+        x: 638
+        y: 305
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\nfunction main({response}) {\n    const resp = JSON.parse(response)\n\
+          \    const list = resp.data || []\n\n    return {\n        result: JSON.stringify(list),\n\
+          \        count: list.length\n    }\n}\n"
+        code_language: javascript
+        desc: ''
+        outputs:
+          count:
+            children: null
+            type: number
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 解析数据库列表
+        type: code
+        variables:
+        - value_selector:
+          - '1741766449228'
+          - text
+          variable: response
+      height: 54
+      id: '1741768807507'
+      position:
+        x: 942
+        y: 632.5
+      positionAbsolute:
+        x: 942
+        y: 632.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: 未配置应用的数据源，无法进行数据检索
+        desc: ''
+        selected: false
+        title: 无法检索数据库
+        type: answer
+        variables: []
+      height: 118
+      id: '1741768954531'
+      position:
+        x: 1550
+        y: 608
+      positionAbsolute:
+        x: 1550
+        y: 608
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: '>'
+            id: 542bc784-691f-4829-901f-22812cf9c837
+            value: '1'
+            varType: number
+            variable_selector:
+            - '1741768807507'
+            - count
+          id: 'true'
+          logical_operator: and
+        - case_id: b34dc9c6-7b45-4aec-b0a7-eb0238ca1abf
+          conditions:
+          - comparison_operator: '='
+            id: 5189814d-8156-4cd9-b7c8-146566b8cdb1
+            value: '1'
+            varType: number
+            variable_selector:
+            - '1741768807507'
+            - count
+          logical_operator: and
+        desc: ''
+        selected: false
+        title: 条件分支
+        type: if-else
+      height: 174
+      id: '1741769487876'
+      position:
+        x: 1246
+        y: 580
+      positionAbsolute:
+        x: 1246
+        y: 580
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1741768807507'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: glm-4-flash
+          provider: langgenius/zhipuai/zhipuai
+        prompt_template:
+        - id: 4fe4de56-f074-4394-a89e-e4f54bcaff56
+          role: system
+          text: '已知的数据库信息：{{#context#}}
+
+            请根据提供的数据库信息，结合用户的问题确定要使用哪个数据库，只需要给出数据库ID即可，不要输出其他信息'
+        selected: false
+        title: 确定要查询的数据库
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1741769572043'
+      position:
+        x: 1550
+        y: 766
+      positionAbsolute:
+        x: 1550
+        y: 766
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        instruction: 从文本中提取数据库ID信息。如果文本仅有ID信息，直接返回，如果有其他信息请删除多余的信息，仅返回ID
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: glm-4-flash
+          provider: langgenius/zhipuai/zhipuai
+        parameters:
+        - description: 数据库ID
+          name: id
+          required: true
+          type: string
+        query:
+        - '1741769572043'
+        - text
+        reasoning_mode: prompt
+        selected: false
+        title: 参数提取器
+        type: parameter-extractor
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1741769710835'
+      position:
+        x: 1854
+        y: 758.5
+      positionAbsolute:
+        x: 1854
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\nfunction main({list}) {\n    const datasourceList = JSON.parse(list)\n\
+          \    const datasource = datasourceList[0]\n    return {\n        result:\
+          \ datasource.id\n    }\n}\n"
+        code_language: javascript
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 获取数据库ID
+        type: code
+        variables:
+        - value_selector:
+          - '1741768807507'
+          - result
+          variable: list
+      height: 54
+      id: '1741769830218'
+      position:
+        x: 1854
+        y: 888.5
+      positionAbsolute:
+        x: 1854
+        y: 888.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        advanced_settings:
+          group_enabled: false
+          groups:
+          - groupId: d8591524-c8d2-4d57-a72e-776a9cd50d84
+            group_name: Group1
+            output_type: string
+            variables:
+            - - '1741769710835'
+              - id
+            - - '1741769830218'
+              - result
+        desc: ''
+        output_type: string
+        selected: false
+        title: 得到数据库ID
+        type: variable-aggregator
+        variables:
+        - - '1741769710835'
+          - id
+        - - '1741769830218'
+          - result
+      height: 130
+      id: '1741769903354'
+      position:
+        x: 2158
+        y: 758.5
+      positionAbsolute:
+        x: 2158
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 应用密钥
+            ja_JP: 应用密钥
+            pt_BR: 应用密钥
+            zh_Hans: 应用密钥
+          label:
+            en_US: Authorization
+            ja_JP: Authorization
+            pt_BR: Authorization
+            zh_Hans: Authorization
+          llm_description: 应用密钥
+          max: null
+          min: null
+          name: Authorization
+          options: []
+          placeholder:
+            en_US: 应用密钥
+            ja_JP: 应用密钥
+            pt_BR: 应用密钥
+            zh_Hans: 应用密钥
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 数据源ID
+            ja_JP: 数据源ID
+            pt_BR: 数据源ID
+            zh_Hans: 数据源ID
+          label:
+            en_US: datasourceId
+            ja_JP: datasourceId
+            pt_BR: datasourceId
+            zh_Hans: datasourceId
+          llm_description: 数据源ID
+          max: null
+          min: null
+          name: datasourceId
+          options: []
+          placeholder:
+            en_US: 数据源ID
+            ja_JP: 数据源ID
+            pt_BR: 数据源ID
+            zh_Hans: 数据源ID
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        params:
+          Authorization: ''
+          datasourceId: ''
+        provider_id: a2558825-4435-4d8a-9087-a6e36c0473a9
+        provider_name: 数据库检索
+        provider_type: api
+        selected: false
+        title: GetDatabaseSchema
+        tool_configurations: {}
+        tool_label: GetDatabaseSchema
+        tool_name: GetDatabaseSchema
+        tool_parameters:
+          Authorization:
+            type: mixed
+            value: '{{#1741765096929.app_secret#}}'
+          datasourceId:
+            type: mixed
+            value: '{{#1741769903354.output#}}'
+        type: tool
+      height: 54
+      id: '1741770006652'
+      position:
+        x: 2462
+        y: 758.5
+      positionAbsolute:
+        x: 2462
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\nfunction main({response}) {\n    const resp = JSON.parse(response)\n\
+          \n    return {\n        result: JSON.stringify(resp.data)\n    }\n}\n"
+        code_language: javascript
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 获取数据结构json
+        type: code
+        variables:
+        - value_selector:
+          - '1741770006652'
+          - text
+          variable: response
+      height: 54
+      id: '1741770158371'
+      position:
+        x: 2766
+        y: 758.5
+      positionAbsolute:
+        x: 2766
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1741770158371'
+          - result
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: glm-4-flash
+          provider: langgenius/zhipuai/zhipuai
+        prompt_template:
+        - edition_type: basic
+          id: 2e884b34-844f-46c4-a549-1f53e61deb27
+          role: system
+          text: '数据库结构：{{#context#}}
+
+            当前时间为：{{#1741771154251.text#}}
+
+            你需要根据数据库结构和用户的问题，生成查询的SQL语句，不需要解释说明或添加额外的信息，仅输出SQL语句'
+        selected: false
+        title: 生成sql语句
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1741770220307'
+      position:
+        x: 3374
+        y: 758.5
+      positionAbsolute:
+        x: 3374
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1741771588603.text#}}'
+        desc: ''
+        selected: false
+        title: 回答数据库查询结果
+        type: answer
+        variables: []
+      height: 105
+      id: '1741770301771'
+      position:
+        x: 5198
+        y: 758.5
+      positionAbsolute:
+        x: 5198
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: '%Y-%m-%d %H:%M:%S'
+          form: form
+          human_description:
+            en_US: Time format in strftime standard.
+            ja_JP: Time format in strftime standard.
+            pt_BR: Time format in strftime standard.
+            zh_Hans: strftime 标准的时间格式。
+          label:
+            en_US: Format
+            ja_JP: Format
+            pt_BR: Format
+            zh_Hans: 格式
+          llm_description: null
+          max: null
+          min: null
+          name: format
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: UTC
+          form: form
+          human_description:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          label:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          llm_description: null
+          max: null
+          min: null
+          name: timezone
+          options:
+          - label:
+              en_US: UTC
+              ja_JP: UTC
+              pt_BR: UTC
+              zh_Hans: UTC
+            value: UTC
+          - label:
+              en_US: America/New_York
+              ja_JP: America/New_York
+              pt_BR: America/New_York
+              zh_Hans: 美洲/纽约
+            value: America/New_York
+          - label:
+              en_US: America/Los_Angeles
+              ja_JP: America/Los_Angeles
+              pt_BR: America/Los_Angeles
+              zh_Hans: 美洲/洛杉矶
+            value: America/Los_Angeles
+          - label:
+              en_US: America/Chicago
+              ja_JP: America/Chicago
+              pt_BR: America/Chicago
+              zh_Hans: 美洲/芝加哥
+            value: America/Chicago
+          - label:
+              en_US: America/Sao_Paulo
+              ja_JP: America/Sao_Paulo
+              pt_BR: América/São Paulo
+              zh_Hans: 美洲/圣保罗
+            value: America/Sao_Paulo
+          - label:
+              en_US: Asia/Shanghai
+              ja_JP: Asia/Shanghai
+              pt_BR: Asia/Shanghai
+              zh_Hans: 亚洲/上海
+            value: Asia/Shanghai
+          - label:
+              en_US: Asia/Ho_Chi_Minh
+              ja_JP: Asia/Ho_Chi_Minh
+              pt_BR: Ásia/Ho Chi Minh
+              zh_Hans: 亚洲/胡志明市
+            value: Asia/Ho_Chi_Minh
+          - label:
+              en_US: Asia/Tokyo
+              ja_JP: Asia/Tokyo
+              pt_BR: Asia/Tokyo
+              zh_Hans: 亚洲/东京
+            value: Asia/Tokyo
+          - label:
+              en_US: Asia/Dubai
+              ja_JP: Asia/Dubai
+              pt_BR: Asia/Dubai
+              zh_Hans: 亚洲/迪拜
+            value: Asia/Dubai
+          - label:
+              en_US: Asia/Kolkata
+              ja_JP: Asia/Kolkata
+              pt_BR: Asia/Kolkata
+              zh_Hans: 亚洲/加尔各答
+            value: Asia/Kolkata
+          - label:
+              en_US: Asia/Seoul
+              ja_JP: Asia/Seoul
+              pt_BR: Asia/Seoul
+              zh_Hans: 亚洲/首尔
+            value: Asia/Seoul
+          - label:
+              en_US: Asia/Singapore
+              ja_JP: Asia/Singapore
+              pt_BR: Asia/Singapore
+              zh_Hans: 亚洲/新加坡
+            value: Asia/Singapore
+          - label:
+              en_US: Europe/London
+              ja_JP: Europe/London
+              pt_BR: Europe/London
+              zh_Hans: 欧洲/伦敦
+            value: Europe/London
+          - label:
+              en_US: Europe/Berlin
+              ja_JP: Europe/Berlin
+              pt_BR: Europe/Berlin
+              zh_Hans: 欧洲/柏林
+            value: Europe/Berlin
+          - label:
+              en_US: Europe/Moscow
+              ja_JP: Europe/Moscow
+              pt_BR: Europe/Moscow
+              zh_Hans: 欧洲/莫斯科
+            value: Europe/Moscow
+          - label:
+              en_US: Australia/Sydney
+              ja_JP: Australia/Sydney
+              pt_BR: Australia/Sydney
+              zh_Hans: 澳大利亚/悉尼
+            value: Australia/Sydney
+          - label:
+              en_US: Pacific/Auckland
+              ja_JP: Pacific/Auckland
+              pt_BR: Pacific/Auckland
+              zh_Hans: 太平洋/奥克兰
+            value: Pacific/Auckland
+          - label:
+              en_US: Africa/Cairo
+              ja_JP: Africa/Cairo
+              pt_BR: Africa/Cairo
+              zh_Hans: 非洲/开罗
+            value: Africa/Cairo
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: select
+        params:
+          format: ''
+          timezone: ''
+        provider_id: time
+        provider_name: time
+        provider_type: builtin
+        selected: false
+        title: 获取当前时间
+        tool_configurations:
+          format: '%Y-%m-%d %H:%M:%S'
+          timezone: UTC
+        tool_label: 获取当前时间
+        tool_name: current_time
+        tool_parameters: {}
+        type: tool
+      height: 116
+      id: '1741771154251'
+      position:
+        x: 3070
+        y: 758.5
+      positionAbsolute:
+        x: 3070
+        y: 758.5
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 应用密钥
+            ja_JP: 应用密钥
+            pt_BR: 应用密钥
+            zh_Hans: 应用密钥
+          label:
+            en_US: Authorization
+            ja_JP: Authorization
+            pt_BR: Authorization
+            zh_Hans: Authorization
+          llm_description: 应用密钥
+          max: null
+          min: null
+          name: Authorization
+          options: []
+          placeholder:
+            en_US: 应用密钥
+            ja_JP: 应用密钥
+            pt_BR: 应用密钥
+            zh_Hans: 应用密钥
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: SQL语句
+            ja_JP: SQL语句
+            pt_BR: SQL语句
+            zh_Hans: SQL语句
+          label:
+            en_US: sql
+            ja_JP: sql
+            pt_BR: sql
+            zh_Hans: sql
+          llm_description: SQL语句
+          max: null
+          min: null
+          name: sql
+          options: []
+          placeholder:
+            en_US: SQL语句
+            ja_JP: SQL语句
+            pt_BR: SQL语句
+            zh_Hans: SQL语句
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: 数据源ID
+            ja_JP: 数据源ID
+            pt_BR: 数据源ID
+            zh_Hans: 数据源ID
+          label:
+            en_US: datasourceId
+            ja_JP: datasourceId
+            pt_BR: datasourceId
+            zh_Hans: datasourceId
+          llm_description: 数据源ID
+          max: null
+          min: null
+          name: datasourceId
+          options: []
+          placeholder:
+            en_US: 数据源ID
+            ja_JP: 数据源ID
+            pt_BR: 数据源ID
+            zh_Hans: 数据源ID
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        params:
+          Authorization: ''
+          datasourceId: ''
+          sql: ''
+        provider_id: a2558825-4435-4d8a-9087-a6e36c0473a9
+        provider_name: 数据库检索
+        provider_type: api
+        selected: false
+        title: executeSql
+        tool_configurations: {}
+        tool_label: executeSql
+        tool_name: executeSql
+        tool_parameters:
+          Authorization:
+            type: mixed
+            value: '{{#1741765096929.app_secret#}}'
+          datasourceId:
+            type: mixed
+            value: '{{#1741769903354.output#}}'
+          sql:
+            type: mixed
+            value: '{{#1741771708923.result#}}'
+        type: tool
+      height: 54
+      id: '1741771547891'
+      position:
+        x: 4286
+        y: 758.5
+      positionAbsolute:
+        x: 4286
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1741771547891'
+          - text
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-ai/DeepSeek-R1
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: fa4d1bc0-9e48-4abf-b378-33e54ec5d339
+          role: system
+          text: '数据库查询结果：{{#context#}}
+
+            请根据用户问题，结合数据库查询的结果，组织简短精炼的回复，如果数据能够以图表方式呈现的，尽可能通过markdown的图表格式输出(如使用markvis格式）'
+        selected: false
+        title: 组织回复
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1741771588603'
+      position:
+        x: 4894
+        y: 758.5
+      positionAbsolute:
+        x: 4894
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\nfunction main({text}) {\n    let result = ''\n    try {\n       \
+          \ const json = JSON.parse(text)\n        if (json && json.sql) {\n     \
+          \       result = json.sql\n        }\n    } catch (e) {}\n\n    if (result\
+          \ === '') {\n        const sqlBlockRegex = /```sql\\s*([\\s\\S]*?)\\s*```/i\n\
+          \        const match = text.match(sqlBlockRegex)\n        if (match && match[1])\
+          \ {\n            result = match[1].trim()\n        } else {\n          \
+          \  const sqlKeywords = ['SELECT'] // 其他语句不允许\n            const firstWord\
+          \ = text.split(/\\s+/)[0].toUpperCase()\n            if (sqlKeywords.includes(firstWord))\
+          \ {\n                result = text.trim()\n            }\n        }\n  \
+          \  }\n\n    return {\n        result,\n    }\n}\n"
+        code_language: javascript
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 过滤sql
+        type: code
+        variables:
+        - value_selector:
+          - '1741770220307'
+          - text
+          variable: text
+      height: 54
+      id: '1741771708923'
+      position:
+        x: 3678
+        y: 758.5
+      positionAbsolute:
+        x: 3678
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: empty
+            id: ec4ad907-e331-4005-bd81-2f9e11aaa114
+            value: ''
+            varType: string
+            variable_selector:
+            - '1741771708923'
+            - result
+          id: 'true'
+          logical_operator: and
+        desc: ''
+        selected: false
+        title: 条件分支 2
+        type: if-else
+      height: 126
+      id: '1741772323819'
+      position:
+        x: 3982
+        y: 758.5
+      positionAbsolute:
+        x: 3982
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: 对不起，检索失败，请重新尝试
+        desc: ''
+        selected: false
+        title: sql语句为空
+        type: answer
+        variables: []
+      height: 102
+      id: '1741772377282'
+      position:
+        x: 4286
+        y: 852.5
+      positionAbsolute:
+        x: 4286
+        y: 852.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        code: "\nfunction main({response}) {\n    const resp = JSON.parse(response)\n\
+          \    return {\n        result: JSON.stringify(resp.data)\n    }\n}\n"
+        code_language: javascript
+        desc: ''
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 提取数据
+        type: code
+        variables:
+        - value_selector:
+          - '1741771547891'
+          - text
+          variable: response
+      height: 54
+      id: '1741772549450'
+      position:
+        x: 4590
+        y: 758.5
+      positionAbsolute:
+        x: 4590
+        y: 758.5
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

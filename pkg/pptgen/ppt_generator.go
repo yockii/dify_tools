@@ -147,20 +147,7 @@ func (g *PPTGenerator) WriteToFile(pptxBytes []byte, filePath string) error {
 // addSlides adds all slide files to the PPTX structure
 // This method handles the generation of slide XML files and their relationships
 func (g *PPTGenerator) addSlides(zipWriter *zip.Writer, slides []SlideContent) error {
-	// 将调试功能设为可选，避免因日志错误中断主要功能
-	debugEnabled := false // 可以通过配置参数控制
-
-	if debugEnabled {
-		// 尝试输出调试信息，但忽略任何错误
-		_ = g.DumpSlideStructure(slides, "./debug_slides.json")
-	}
-
 	for i, slide := range slides {
-		// 调试日志也设为可选
-		if debugEnabled {
-			g.LogSlideGeneration(i, slide)
-		}
-
 		slideNum := i + 1
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNum)
 
@@ -168,8 +155,7 @@ func (g *PPTGenerator) addSlides(zipWriter *zip.Writer, slides []SlideContent) e
 
 		slideWriter, err := zipWriter.Create(slidePath)
 		if err != nil {
-			// 使用fmt.Printf作为后备，避免依赖logger
-			fmt.Printf("创建幻灯片XML失败: %s, 错误: %v\n", slidePath, err)
+			logger.Error("创建幻灯片XML失败", logger.F("slidePath", slidePath), logger.F("error", err))
 			return err
 		}
 

@@ -24,31 +24,17 @@ func (g *PPTGenerator) createFromTemplate(zipWriter *zip.Writer, slides []SlideC
 	defer templateFile.Close()
 
 	// 创建模板ZIP读取器
-	info, _ := templateFile.Stat()
-	fmt.Printf("模板文件大小: %d 字节\n", info.Size())
-
 	templateZip, err := zip.NewReader(templateFile, getFileSize(templateFile))
 	if err != nil {
 		logger.Error("创建模板ZIP读取器失败", logger.F("error", err))
 		return err
 	}
 
-	// 获取模板中已有的幻灯片数量
+	// 获取模板中已有的幻灯片数量和需要的幻灯片数量
 	slideCountInTemplate := countSlidesInTemplate(templateZip)
-	fmt.Printf("模板中包含 %d 张幻灯片\n", slideCountInTemplate)
-
-	// 需要确保我们有足够的幻灯片来容纳所有内容
 	slidesNeeded := len(slides)
-	fmt.Printf("根据内容需要 %d 张幻灯片\n", slidesNeeded)
 
-	// 简单检查解析的幻灯片内容
-	fmt.Printf("幻灯片内容摘要:\n")
-	for i, slide := range slides {
-		fmt.Printf("  [%d] 标题: %s, 布局: %d, 内容项数: %d\n",
-			i+1, slide.Title, slide.Layout, len(slide.Content))
-	}
-
-	// 先保存模板中所有文件的数据，稍后我们会按需修改
+	// 先保存模板中所有文件的数据，稍后会按需修改
 	templateFiles := make(map[string][]byte)
 
 	// 从模板中读取所有文件
@@ -58,31 +44,19 @@ func (g *PPTGenerator) createFromTemplate(zipWriter *zip.Writer, slides []SlideC
 			logger.Error("读取模板文件失败", logger.F("filename", file.Name), logger.F("error", err))
 			continue
 		}
-
 		templateFiles[file.Name] = data
-
-		// 输出幻灯片文件名和大小
-		if strings.Contains(file.Name, "ppt/slides/slide") {
-			fmt.Printf("读取模板幻灯片文件: %s (大小: %d 字节)\n", file.Name, len(data))
-		}
 	}
 
 	// 强制删除所有模板幻灯片，使用新的幻灯片
 	for i := 1; i <= slideCountInTemplate; i++ {
 		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", i)
-		if _, exists := templateFiles[slidePath]; exists {
-			delete(templateFiles, slidePath)
-			fmt.Printf("删除模板幻灯片: %s\n", slidePath)
-		}
+		delete(templateFiles, slidePath)
 
 		slideRelPath := fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", i)
-		if _, exists := templateFiles[slideRelPath]; exists {
-			delete(templateFiles, slideRelPath)
-			fmt.Printf("删除模板幻灯片关系文件: %s\n", slideRelPath)
-		}
+		delete(templateFiles, slideRelPath)
 	}
 
-	// 完全重写 [Content_Types].xml 文件，而不是修改它
+	// 重写 [Content_Types].xml 文件
 	contentTypes := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
     <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -102,7 +76,6 @@ func (g *PPTGenerator) createFromTemplate(zipWriter *zip.Writer, slides []SlideC
 </Types>`
 
 	templateFiles["[Content_Types].xml"] = []byte(contentTypes)
-	fmt.Printf("重写内容类型文件，包含 %d 张幻灯片\n", slidesNeeded)
 
 	// 重写 presentation.xml 文件
 	presentation := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -126,7 +99,6 @@ func (g *PPTGenerator) createFromTemplate(zipWriter *zip.Writer, slides []SlideC
 </p:presentation>`
 
 	templateFiles["ppt/presentation.xml"] = []byte(presentation)
-	fmt.Printf("重写演示文稿文件，包含 %d 张幻灯片引用\n", slidesNeeded)
 
 	// 重写 presentation.xml.rels 文件
 	presRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -143,7 +115,6 @@ func (g *PPTGenerator) createFromTemplate(zipWriter *zip.Writer, slides []SlideC
 </Relationships>`
 
 	templateFiles["ppt/_rels/presentation.xml.rels"] = []byte(presRels)
-	fmt.Printf("重写演示文稿关系文件，包含 %d 张幻灯片关系\n", slidesNeeded)
 
 	// 生成所有新幻灯片内容
 	for i, slide := range slides {
@@ -154,13 +125,10 @@ func (g *PPTGenerator) createFromTemplate(zipWriter *zip.Writer, slides []SlideC
 		// 生成幻灯片内容XML
 		slideContent := g.generateSlideXML(slide, slideNum)
 		templateFiles[slidePath] = []byte(slideContent)
-		fmt.Printf("添加幻灯片 %d, 标题: %s, 大小: %d 字节\n",
-			slideNum, slide.Title, len(slideContent))
 
 		// 生成幻灯片关系XML
 		slideRelContent := g.generateSlideRelXML(slide)
 		templateFiles[slideRelPath] = []byte(slideRelContent)
-		fmt.Printf("添加幻灯片关系 %d, 大小: %d 字节\n", slideNum, len(slideRelContent))
 	}
 
 	// 将所有文件写入ZIP
@@ -171,17 +139,10 @@ func (g *PPTGenerator) createFromTemplate(zipWriter *zip.Writer, slides []SlideC
 			return err
 		}
 
-		n, err := fw.Write(content)
+		_, err = fw.Write(content)
 		if err != nil {
 			logger.Error("写入文件内容失败", logger.F("filename", filename), logger.F("error", err))
 			return err
-		}
-
-		// 输出写入的关键文件信息
-		if strings.Contains(filename, "slides/slide") ||
-			strings.Contains(filename, "presentation.xml") ||
-			filename == "[Content_Types].xml" {
-			fmt.Printf("写入文件: %s (大小: %d 字节)\n", filename, n)
 		}
 	}
 

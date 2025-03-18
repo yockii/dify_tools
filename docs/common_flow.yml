@@ -417,6 +417,29 @@ workflow:
       targetHandle: target
       type: custom
       zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: 1741765170486-1742265461944-17422655456810-target
+      source: '1741765170486'
+      sourceHandle: '1742265461944'
+      target: '17422655456810'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 17422655456810-source-1742265792537-target
+      source: '17422655456810'
+      sourceHandle: source
+      target: '1742265792537'
+      targetHandle: target
+      type: custom
+      zIndex: 0
     nodes:
     - data:
         desc: ''
@@ -477,19 +500,21 @@ workflow:
           name: 数据库查询
         - id: '1741765201958'
           name: 直接回复
+        - id: '1742265461944'
+          name: 生成PPT
         desc: ''
-        instruction: '你需要结合上下文对用户的问题进行精准判断。
+        instruction: '你需要结合上下文对用户的意图进行分类，不要单纯使用关键词。
 
-          当问题问及政策时，请查阅知识库；当问题涉及系统数据时，请使用数据库查询；其余情况直接回复'
+          当用户意图为咨询时，判断是否涉及政策规定等，有则查阅知识库，涉及系统相关数据时，则使用数据库查询；如果用户意图与生成PPT相关，请使用生成PPT；其余情况直接回复'
         instructions: ''
         memory:
           query_prompt_template: '{{#sys.query#}}'
           window:
-            enabled: false
-            size: 50
+            enabled: true
+            size: 5
         model:
           completion_params:
-            temperature: 0.7
+            temperature: 0.5
           mode: chat
           name: glm-4-flash
           provider: langgenius/zhipuai/zhipuai
@@ -502,7 +527,7 @@ workflow:
         type: question-classifier
         vision:
           enabled: false
-      height: 210
+      height: 248
       id: '1741765170486'
       position:
         x: 334
@@ -761,7 +786,7 @@ workflow:
       positionAbsolute:
         x: 942
         y: 305
-      selected: true
+      selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -1867,7 +1892,129 @@ workflow:
       targetPosition: left
       type: custom
       width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Qwen/QwQ-32B
+          provider: langgenius/openai_api_compatible/openai_api_compatible
+        prompt_template:
+        - id: bc6ccf40-8e6f-4ddf-9971-5e3005516ddc
+          role: system
+          text: '## 任务描述
+
+            你是PPT大纲整理专家，应该根据用户的要求及上下文，整理出符合要求的PPT大纲。
+
+
+            ## 输出格式
+
+            请使用标准的Markdown格式输出整体PPT大纲，并以`ppt outline:`作为第一行，随后第二行紧跟着大纲内容。不要有其他多余的内容。
+
+
+            ### 示例
+
+            ppt outline:
+
+            # 演示文稿标题
+
+            ## 副标题（可选）
+
+
+            ---
+
+
+            # 第一章节标题
+
+            - 要点1
+
+            - 要点2
+
+            - 要点3
+
+
+            ---
+
+
+            ## 子章节标题
+
+            - 内容项目1
+
+                - 子项目
+
+            - 内容项目2
+
+
+            ---
+
+
+            ![图片描述](图片路径) <!-- 图片幻灯片 -->
+
+
+            ---
+
+
+            > 引用内容 <!-- 引用幻灯片 -->
+
+            > -- 引用来源
+
+
+            ---
+
+
+            # 谢谢观看 <!-- 结束页 -->'
+        selected: false
+        title: ppt大纲生成
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '17422655456810'
+      position:
+        x: 638
+        y: 815.7142857142859
+      positionAbsolute:
+        x: 638
+        y: 815.7142857142859
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#17422655456810.text#}}'
+        desc: ''
+        selected: false
+        title: 直接回复 6
+        type: answer
+        variables: []
+      height: 105
+      id: '1742265792537'
+      position:
+        x: 942
+        y: 815.7142857142859
+      positionAbsolute:
+        x: 942
+        y: 815.7142857142859
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
     viewport:
-      x: 0
+      x: -1
       y: 0
       zoom: 0.7

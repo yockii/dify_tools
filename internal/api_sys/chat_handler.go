@@ -13,6 +13,7 @@ import (
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
 	"github.com/yockii/dify_tools/pkg/logger"
+	"github.com/yockii/dify_tools/pkg/pptgen"
 )
 
 type ChatHandler struct {
@@ -42,6 +43,7 @@ func (h *ChatHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.H
 		chatRouter.Get("/list", h.GetSessionList)
 		chatRouter.Get("/history", h.GetSessionHistory)
 		chatRouter.Post("/stop", h.StopChatFlow)
+		chatRouter.Post("/generate_ppt", h.GeneratePPT)
 	}
 }
 
@@ -321,4 +323,61 @@ func (h *ChatHandler) GetSessionHistory(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(service.OK(historyData))
+}
+
+type GeneratePPTRequest struct {
+	TemplateType string `json:"template_type"`
+	ThemeColor   string `json:"theme_color"`
+	FontFamily   string `json:"font_family"`
+	Content      string `json:"content"`
+}
+
+func (h *ChatHandler) GeneratePPT(c *fiber.Ctx) error {
+	// user := c.Locals("user").(*model.User)
+	// if user == nil {
+	// 	logger.Error("获取用户信息失败", logger.F("err", "user is nil"))
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrUnauthorized))
+	// }
+
+	var req GeneratePPTRequest
+	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析请求参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if req.Content == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	// 检查和映射模板类型
+	var templateEnum pptgen.TemplateType
+	switch req.TemplateType {
+	case "business":
+		templateEnum = pptgen.TemplateBusiness
+	case "academic":
+		templateEnum = pptgen.TemplateAcademic
+	case "minimalist":
+		templateEnum = pptgen.TemplateMinimalist
+	default:
+		logger.Error("无效的模板类型", logger.F("template_type", req.TemplateType))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	pptGenerator := pptgen.NewPPTGenerator()
+	config := pptgen.TemplateConfig{
+		Type:       templateEnum,
+		ThemeColor: req.ThemeColor,
+		FontFamily: req.FontFamily,
+	}
+
+	buf, err := pptGenerator.GeneratePPTX(config, req.Content)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	// 下载文件流
+	c.Set("Content-Disposition", "attachment; filename=generated.pptx")
+	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation")
+	c.Set("Content-Length", strconv.Itoa(len(buf)))
+	return c.Status(fiber.StatusOK).Send(buf)
 }

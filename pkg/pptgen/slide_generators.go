@@ -18,8 +18,10 @@ func (g *PPTGenerator) generateSlideXML(slide SlideContent, slideIndex int) stri
 		contentXML = g.generateQuoteSlideXML(slide)
 	case LayoutThankYou:
 		contentXML = g.generateThankYouSlideXML(slide)
-	case LayoutSubsection: // Handle the new layout type
+	case LayoutSubsection:
 		contentXML = g.generateSubsectionSlideXML(slide)
+	case LayoutTwoColumn: // 添加两栏布局处理
+		contentXML = g.generateTwoColumnSlideXML(slide)
 	default:
 		contentXML = g.generateContentSlideXML(slide)
 	}
@@ -338,4 +340,148 @@ func (g *PPTGenerator) generateSubsectionSlideXML(slide SlideContent) string {
                     <a:lstStyle/>%s
                 </p:txBody>
             </p:sp>`, slide.Title, slide.Subtitle, contentItems)
+}
+
+// 生成两栏布局幻灯片内容
+func (g *PPTGenerator) generateTwoColumnSlideXML(slide SlideContent) string {
+	// 处理左栏内容
+	leftColumnItems := ""
+	for _, item := range slide.LeftColumn {
+		if strings.HasPrefix(item, "QUOTE:") {
+			// 处理引用
+			quoteText := strings.TrimPrefix(item, "QUOTE:")
+			leftColumnItems += fmt.Sprintf(`
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="2600" i="1"/>
+                            <a:t>"%s"</a:t>
+                        </a:r>
+                    </a:p>`, quoteText)
+		} else if strings.HasPrefix(item, "IMAGE:") {
+			// 处理图片（此处仅为占位符，实际需要更复杂的图片处理逻辑）
+			// 在实际实现中需要添加图片的引用和关系
+			imageURL := strings.TrimPrefix(item, "IMAGE:")
+			leftColumnItems += fmt.Sprintf(`
+                    <a:p>
+                        <a:pPr algn="ctr"/>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="2400"/>
+                            <a:t>[图片: %s]</a:t>
+                        </a:r>
+                    </a:p>`, imageURL)
+		} else {
+			// 处理普通文本
+			leftColumnItems += fmt.Sprintf(`
+                    <a:p>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="2400"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>`, item)
+		}
+	}
+
+	// 处理右栏内容
+	rightColumnItems := ""
+	for _, item := range slide.RightColumn {
+		// 检查是否为L3内容
+		isL3Content := strings.HasPrefix(item, "L3:")
+		itemText := item
+		if isL3Content {
+			itemText = strings.TrimPrefix(item, "L3:")
+		}
+
+		// 为L3内容应用不同的样式
+		if isL3Content {
+			rightColumnItems += fmt.Sprintf(`
+                    <a:p>
+                        <a:pPr lvl="0">
+                            <a:buChar char="◆"/>
+                        </a:pPr>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="2400" i="1"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>`, itemText)
+		} else {
+			rightColumnItems += fmt.Sprintf(`
+                    <a:p>
+                        <a:pPr lvl="0">
+                            <a:buChar char="•"/>
+                        </a:pPr>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="2400"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>`, itemText)
+		}
+	}
+
+	return fmt.Sprintf(`
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="2" name="Title"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="title"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1474200" y="457200"/>
+                        <a:ext cx="6096000" cy="914400"/>
+                    </a:xfrm>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="3600" b="1"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="3" name="Left Column"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1474200" y="1828800"/>
+                        <a:ext cx="2858575" cy="3657600"/>
+                    </a:xfrm>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>%s
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="4" name="Right Column"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="4711625" y="1828800"/>
+                        <a:ext cx="2858575" cy="3657600"/>
+                    </a:xfrm>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>%s
+                </p:txBody>
+            </p:sp>`, slide.Title, leftColumnItems, rightColumnItems)
 }

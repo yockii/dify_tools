@@ -10,9 +10,13 @@ type SlideContent struct {
 	Subtitle    string // Added for level 3 headings
 	Content     []string
 	Layout      SlideLayout
-	ImageURL    string // 如果有图片
-	Level       int    // 标题级别
-	ParentTitle string // 父标题
+	ImageURL    string   // 如果有图片
+	QuoteText   string   // 添加引用文本字段
+	Level       int      // 标题级别
+	ParentTitle string   // 父标题
+	UseColumns  bool     // 是否使用两栏布局
+	LeftColumn  []string // 左栏内容
+	RightColumn []string // 右栏内容
 }
 
 // 解析Markdown大纲为幻灯片内容
@@ -34,6 +38,8 @@ func (g *PPTGenerator) parseMarkdownOutline(markdownText string) ([]SlideContent
 		if strings.HasPrefix(line, "# ") {
 			// 一级标题 - 创建标题幻灯片
 			if currentSlide != nil {
+				// 处理已收集的幻灯片内容
+				finalizeSlide(currentSlide)
 				slides = append(slides, *currentSlide)
 			}
 			currentSlide = &SlideContent{
@@ -45,6 +51,8 @@ func (g *PPTGenerator) parseMarkdownOutline(markdownText string) ([]SlideContent
 		} else if strings.HasPrefix(line, "### ") {
 			// 三级标题 - 创建子内容幻灯片
 			if currentSlide != nil {
+				// 处理已收集的幻灯片内容
+				finalizeSlide(currentSlide)
 				slides = append(slides, *currentSlide)
 			}
 			currentSlide = &SlideContent{
@@ -58,6 +66,8 @@ func (g *PPTGenerator) parseMarkdownOutline(markdownText string) ([]SlideContent
 		} else if strings.HasPrefix(line, "## ") {
 			// 二级标题 - 创建内容幻灯片
 			if currentSlide != nil {
+				// 处理已收集的幻灯片内容
+				finalizeSlide(currentSlide)
 				slides = append(slides, *currentSlide)
 			}
 			currentL2Title = strings.TrimPrefix(line, "## ") // 记录当前二级标题
@@ -82,25 +92,29 @@ func (g *PPTGenerator) parseMarkdownOutline(markdownText string) ([]SlideContent
 				}
 			}
 		} else if strings.HasPrefix(line, "> ") {
-			// 引用 - 创建引用幻灯片
+			// 引用 - 添加到当前幻灯片的引用部分，而不是创建新幻灯片
+			quoteText := strings.TrimPrefix(line, "> ")
 			if currentSlide != nil {
-				slides = append(slides, *currentSlide)
+				currentSlide.QuoteText = quoteText
+
+				// 检测是否有足够的内容来使用两栏布局
+				if len(currentSlide.Content) > 0 || currentSlide.ImageURL != "" {
+					currentSlide.UseColumns = true
+				}
 			}
-			currentSlide = &SlideContent{
-				Title:   "",
-				Content: []string{strings.TrimPrefix(line, "> ")},
-				Layout:  LayoutQuote,
-				Level:   0, // 特殊级别表示引用
-			}
-			isL3Content = false
 		} else if strings.HasPrefix(line, "![") && strings.Contains(line, "](") {
-			// 图片 - 创建图片幻灯片
+			// 图片 - 添加到当前幻灯片，而不是创建新幻灯片
 			start := strings.Index(line, "](") + 2
 			end := strings.LastIndex(line, ")")
 			if start > 0 && end > start {
 				imageURL := line[start:end]
 				if currentSlide != nil {
 					currentSlide.ImageURL = imageURL
+
+					// 检测是否有足够的内容来使用两栏布局
+					if len(currentSlide.Content) > 0 || currentSlide.QuoteText != "" {
+						currentSlide.UseColumns = true
+					}
 				}
 			}
 		} else {
@@ -119,25 +133,8 @@ func (g *PPTGenerator) parseMarkdownOutline(markdownText string) ([]SlideContent
 
 	// 添加最后一个幻灯片
 	if currentSlide != nil {
+		finalizeSlide(currentSlide)
 		slides = append(slides, *currentSlide)
-	}
-
-	// Check if we have at least one quote slide
-	hasQuote := false
-	for _, slide := range slides {
-		if slide.Layout == LayoutQuote {
-			hasQuote = true
-			break
-		}
-	}
-
-	// Add a placeholder quote slide if none exists
-	if !hasQuote {
-		slides = append(slides, SlideContent{
-			Title:   "",
-			Content: []string{"This presentation was created with xhxjj-yockii"},
-			Layout:  LayoutQuote,
-		})
 	}
 
 	// 添加结束页
@@ -147,4 +144,29 @@ func (g *PPTGenerator) parseMarkdownOutline(markdownText string) ([]SlideContent
 	})
 
 	return slides, nil
+}
+
+// 处理幻灯片的最终布局和内容分配
+func finalizeSlide(slide *SlideContent) {
+	// 如果有引用或图片，且有内容，则使用两栏布局
+	if slide.UseColumns || ((slide.QuoteText != "" || slide.ImageURL != "") && len(slide.Content) > 0) {
+		slide.Layout = LayoutTwoColumn
+
+		// 为两栏布局准备内容
+		// 引用和图片放在左栏，内容放在右栏
+		if slide.QuoteText != "" {
+			slide.LeftColumn = append(slide.LeftColumn, "QUOTE:"+slide.QuoteText)
+		}
+
+		// 如果有图片，也添加到左栏
+		if slide.ImageURL != "" {
+			slide.LeftColumn = append(slide.LeftColumn, "IMAGE:"+slide.ImageURL)
+		}
+
+		// 内容放在右栏
+		slide.RightColumn = append(slide.RightColumn, slide.Content...)
+
+		// 清空常规内容，因为已经分配到两栏了
+		slide.Content = nil
+	}
 }

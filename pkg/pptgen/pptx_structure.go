@@ -77,29 +77,6 @@ func (g *PPTGenerator) addPresentation(zipWriter *zip.Writer, slides []SlideCont
 	return g.writeFile(zipWriter, "ppt/_rels/presentation.xml.rels", presRels)
 }
 
-// 添加幻灯片
-func (g *PPTGenerator) addSlides(zipWriter *zip.Writer, slides []SlideContent) error {
-	for i, slide := range slides {
-		slideContent := g.generateSlideXML(slide, i+1)
-
-		if err := g.writeFile(zipWriter, fmt.Sprintf("ppt/slides/slide%d.xml", i+1), slideContent); err != nil {
-			return err
-		}
-
-		// 添加幻灯片关系文件
-		slideRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
-</Relationships>`
-
-		if err := g.writeFile(zipWriter, fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", i+1), slideRels); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // 添加杂项文件
 func (g *PPTGenerator) addMiscFiles(zipWriter *zip.Writer, config TemplateConfig) error {
 	// 添加基本主题

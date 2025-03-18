@@ -1,6 +1,9 @@
 ﻿package pptgen
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // 生成幻灯片XML内容
 func (g *PPTGenerator) generateSlideXML(slide SlideContent, slideIndex int) string {
@@ -13,6 +16,10 @@ func (g *PPTGenerator) generateSlideXML(slide SlideContent, slideIndex int) stri
 		contentXML = g.generateContentSlideXML(slide)
 	case LayoutQuote:
 		contentXML = g.generateQuoteSlideXML(slide)
+	case LayoutThankYou:
+		contentXML = g.generateThankYouSlideXML(slide)
+	case LayoutSubsection: // Handle the new layout type
+		contentXML = g.generateSubsectionSlideXML(slide)
 	default:
 		contentXML = g.generateContentSlideXML(slide)
 	}
@@ -79,16 +86,25 @@ func (g *PPTGenerator) generateTitleSlideXML(slide SlideContent) string {
 func (g *PPTGenerator) generateContentSlideXML(slide SlideContent) string {
 	contentItems := ""
 	for _, item := range slide.Content {
+		// 也需要检查常规内容幻灯片中是否有Level 3内容（可能是解析错误或特殊情况）
+		isL3Content := strings.HasPrefix(item, "L3:")
+		itemText := item
+		content := ""
+		if isL3Content {
+			itemText = strings.TrimPrefix(item, "L3:")
+			content = ` i="1"`
+		}
+
 		contentItems += fmt.Sprintf(`
                     <a:p>
                         <a:pPr lvl="0">
                             <a:buChar char="•"/>
                         </a:pPr>
                         <a:r>
-                            <a:rPr lang="en-US" sz="2800"/>
+                            <a:rPr lang="en-US" sz="2800"%s/>
                             <a:t>%s</a:t>
                         </a:r>
-                    </a:p>`, item)
+                    </a:p>`, content, itemText)
 	}
 
 	return fmt.Sprintf(`
@@ -177,4 +193,149 @@ func (g *PPTGenerator) generateQuoteSlideXML(slide SlideContent) string {
                     </a:p>
                 </p:txBody>
             </p:sp>`, quoteText)
+}
+
+// 生成感谢幻灯片内容
+func (g *PPTGenerator) generateThankYouSlideXML(slide SlideContent) string {
+	return fmt.Sprintf(`
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="2" name="Thank You"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="ctrTitle"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1474200" y="2743200"/>
+                        <a:ext cx="6096000" cy="2743200"/>
+                    </a:xfrm>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="3600" i="1"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>
+                </p:txBody>
+            </p:sp>`, slide.Title)
+}
+
+// 生成子内容幻灯片内容
+func (g *PPTGenerator) generateSubsectionSlideXML(slide SlideContent) string {
+	contentItems := ""
+	for _, item := range slide.Content {
+		// 检查是否为Level 3内容（有特殊前缀）
+		isL3Content := strings.HasPrefix(item, "L3:")
+		itemText := item
+		if isL3Content {
+			itemText = strings.TrimPrefix(item, "L3:")
+		}
+
+		// 为Level 3内容应用不同的样式
+		if isL3Content {
+			contentItems += fmt.Sprintf(`
+                    <a:p>
+                        <a:pPr lvl="0">
+                            <a:buChar char="◆"/>
+                        </a:pPr>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="2800" i="1"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>`, itemText)
+		} else {
+			contentItems += fmt.Sprintf(`
+                    <a:p>
+                        <a:pPr lvl="0">
+                            <a:buChar char="•"/>
+                        </a:pPr>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="2800"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>`, itemText)
+		}
+	}
+
+	return fmt.Sprintf(`
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="2" name="ParentTitle"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="title"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1474200" y="457200"/>
+                        <a:ext cx="6096000" cy="914400"/>
+                    </a:xfrm>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="3600" b="1"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="3" name="Subtitle"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr/>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1474200" y="1371600"/>
+                        <a:ext cx="6096000" cy="457200"/>
+                    </a:xfrm>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>
+                    <a:p>
+                        <a:r>
+                            <a:rPr lang="en-US" sz="3200" b="1"/>
+                            <a:t>%s</a:t>
+                        </a:r>
+                    </a:p>
+                </p:txBody>
+            </p:sp>
+            <p:sp>
+                <p:nvSpPr>
+                    <p:cNvPr id="4" name="Content"/>
+                    <p:cNvSpPr>
+                        <a:spLocks noGrp="1"/>
+                    </p:cNvSpPr>
+                    <p:nvPr>
+                        <p:ph type="body" idx="1"/>
+                    </p:nvPr>
+                </p:nvSpPr>
+                <p:spPr>
+                    <a:xfrm>
+                        <a:off x="1474200" y="1828800"/>
+                        <a:ext cx="6096000" cy="3657600"/>
+                    </a:xfrm>
+                </p:spPr>
+                <p:txBody>
+                    <a:bodyPr/>
+                    <a:lstStyle/>%s
+                </p:txBody>
+            </p:sp>`, slide.Title, slide.Subtitle, contentItems)
 }

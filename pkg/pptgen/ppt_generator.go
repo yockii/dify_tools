@@ -3,6 +3,7 @@
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"os"
 
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -22,12 +23,13 @@ const (
 type SlideLayout int
 
 const (
-	LayoutTitle     SlideLayout = iota // 标题幻灯片
-	LayoutContent                      // 内容幻灯片
-	LayoutTwoColumn                    // 两栏布局
-	LayoutImage                        // 图片布局
-	LayoutQuote                        // 引用布局
-	LayoutThankYou                     // 结束页
+	LayoutTitle      SlideLayout = iota // 标题幻灯片
+	LayoutContent                       // 内容幻灯片
+	LayoutTwoColumn                     // 两栏布局
+	LayoutImage                         // 图片布局
+	LayoutQuote                         // 引用布局
+	LayoutThankYou                      // 结束页
+	LayoutSubsection                    // 子内容布局，用于三级标题
 )
 
 // TemplateConfig 表示模板配置
@@ -140,4 +142,67 @@ func (g *PPTGenerator) WriteToFile(pptxBytes []byte, filePath string) error {
 	}
 
 	return nil
+}
+
+// addSlides adds all slide files to the PPTX structure
+// This method handles the generation of slide XML files and their relationships
+func (g *PPTGenerator) addSlides(zipWriter *zip.Writer, slides []SlideContent) error {
+	// 将调试功能设为可选，避免因日志错误中断主要功能
+	debugEnabled := false // 可以通过配置参数控制
+
+	if debugEnabled {
+		// 尝试输出调试信息，但忽略任何错误
+		_ = g.DumpSlideStructure(slides, "./debug_slides.json")
+	}
+
+	for i, slide := range slides {
+		// 调试日志也设为可选
+		if debugEnabled {
+			g.LogSlideGeneration(i, slide)
+		}
+
+		slideNum := i + 1
+		slidePath := fmt.Sprintf("ppt/slides/slide%d.xml", slideNum)
+
+		slideContent := g.generateSlideXML(slide, slideNum)
+
+		slideWriter, err := zipWriter.Create(slidePath)
+		if err != nil {
+			// 使用fmt.Printf作为后备，避免依赖logger
+			fmt.Printf("创建幻灯片XML失败: %s, 错误: %v\n", slidePath, err)
+			return err
+		}
+
+		_, err = slideWriter.Write([]byte(slideContent))
+		if err != nil {
+			logger.Error("写入幻灯片内容失败", logger.F("slidePath", slidePath), logger.F("error", err))
+			return err
+		}
+
+		// Add slide relationship file
+		slideRelPath := fmt.Sprintf("ppt/slides/_rels/slide%d.xml.rels", slideNum)
+		slideRelContent := g.generateSlideRelXML(slide)
+
+		slideRelWriter, err := zipWriter.Create(slideRelPath)
+		if err != nil {
+			logger.Error("创建幻灯片关系XML失败", logger.F("slideRelPath", slideRelPath), logger.F("error", err))
+			return err
+		}
+
+		_, err = slideRelWriter.Write([]byte(slideRelContent))
+		if err != nil {
+			logger.Error("写入幻灯片关系内容失败", logger.F("slideRelPath", slideRelPath), logger.F("error", err))
+			return err
+		}
+	}
+
+	return nil
+}
+
+// generateSlideRelXML generates the relationship XML for a slide
+func (g *PPTGenerator) generateSlideRelXML(slide SlideContent) string {
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+	<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
+</Relationships>`
 }

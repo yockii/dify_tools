@@ -138,6 +138,10 @@ func (s *documentService) AddDocument(ctx context.Context, document *model.Docum
 		return nil, err
 	}
 	respJson := gjson.Parse(resp)
+	if respJson.Get("status").Exists() && respJson.Get("status").Int() != 200 {
+		logger.Error("上传文件失败", logger.F("resp", resp))
+		return nil, constant.ErrInternalError
+	}
 	document.OuterID = respJson.Get("document.id").String()
 	document.Batch = respJson.Get("batch").String()
 	status := respJson.Get("document.display_status").String()
@@ -155,9 +159,28 @@ func (s *documentService) AddDocument(ctx context.Context, document *model.Docum
 
 // 异步处理
 func (s *documentService) RefreshDocumentStatusUntil(knowledgeBaseID uint64, datasetID, batch string, currentStatus, utilStatus int) {
-	if currentStatus == utilStatus {
+	if currentStatus == utilStatus || batch == "" {
 		return
 	}
+
+	// 先确保文档中有该批次的数据
+	var count int64
+	if err := s.db.Model(&model.Document{}).Where(&model.Document{
+		KnowledgeBaseID: knowledgeBaseID,
+		Batch:           batch,
+	}).Count(&count).Error; err != nil {
+		logger.Error("查询文档失败", logger.F("err", err))
+		// 等待一段时间后重试
+		time.Sleep(time.Second * 15)
+		go s.RefreshDocumentStatusUntil(knowledgeBaseID, datasetID, batch, currentStatus, utilStatus)
+		return
+	}
+
+	if count == 0 {
+		// 已经不存在该批次数据，不再处理
+		return
+	}
+
 	kbClient, err := s.knowledgeBaseService.GetDifyKnowledgeBaseClient(context.Background())
 	if err != nil {
 		logger.Error("获取dify客户端失败", logger.F("err", err))
@@ -168,22 +191,32 @@ func (s *documentService) RefreshDocumentStatusUntil(knowledgeBaseID uint64, dat
 		logger.Error("获取文档状态失败", logger.F("err", err))
 		// 等待一段时间后重试
 		time.Sleep(time.Second * 15)
-		s.RefreshDocumentStatusUntil(knowledgeBaseID, datasetID, batch, currentStatus, utilStatus)
+		go s.RefreshDocumentStatusUntil(knowledgeBaseID, datasetID, batch, currentStatus, utilStatus)
 		return
 	}
-	status := s.transferDocumentStatus(resp)
-	// 更新数据库
-	if err = s.db.Where(map[string]interface{}{
-		"knowledge_base_id": knowledgeBaseID,
-		"batch":             batch,
-	}).Updates(&model.Document{
-		Status: status,
-	}).Error; err != nil {
-		logger.Error("更新文档状态失败", logger.F("err", err))
+
+	minStatus := 7
+	respJson := gjson.Parse(resp)
+	for _, dj := range respJson.Get("data").Array() {
+		outerId := dj.Get("id").String()
+		indexingStatus := dj.Get("indexing_status").String()
+		status := s.transferDocumentStatus(indexingStatus)
+		if err = s.db.Where(map[string]interface{}{
+			"knowledge_base_id": knowledgeBaseID,
+			"outer_id":          outerId,
+		}).Updates(&model.Document{
+			Status: status,
+		}).Error; err != nil {
+			logger.Error("更新文档状态失败", logger.F("err", err))
+		}
+		if status < minStatus {
+			minStatus = status
+		}
 	}
-	if status != utilStatus {
+
+	if minStatus != utilStatus {
 		time.Sleep(time.Second * 15)
-		s.RefreshDocumentStatusUntil(knowledgeBaseID, datasetID, batch, status, utilStatus)
+		s.RefreshDocumentStatusUntil(knowledgeBaseID, datasetID, batch, minStatus, utilStatus)
 	}
 }
 
@@ -197,14 +230,14 @@ func (s *documentService) transferDocumentStatus(status string) int {
 		return 3
 	case "error":
 		return 4
-	case "available":
+	case "available", "completed":
 		return 5
 	case "disabled":
 		return 6
 	case "archived":
 		return 7
 	default:
-		return 5
+		return 1
 	}
 }
 

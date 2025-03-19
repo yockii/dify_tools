@@ -33,9 +33,9 @@ type RetrievalSetting struct {
 }
 
 type DifyRetrievalRequest struct {
-	KnowledgeID      string           `json:"knowledgeId"`
+	KnowledgeID      string           `json:"knowledge_id"`
 	Query            string           `json:"query"`
-	RetrievalSetting RetrievalSetting `json:"retrievalSetting"`
+	RetrievalSetting RetrievalSetting `json:"retrieval_setting"`
 }
 
 type Record struct {
@@ -135,11 +135,16 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 	var result []Record
 	for _, record := range records {
 		r := Record{
-			Content:  record.Get("segment.content").String(),
-			Score:    record.Get("score").Float(),
-			Title:    record.Get("document.name").String(),
-			Metadata: record.Get("metadata").Value().(map[string]interface{}),
+			Content: record.Get("segment.content").String(),
+			Score:   record.Get("score").Float(),
+			Title:   record.Get("segment.document.name").String(),
+			// Metadata: record.Get("segment.document.doc_metadata").Value().(map[string]interface{}),
 		}
+		metaData := map[string]interface{}{}
+		if record.Get("segment.document.doc_metadata").Exists() {
+			metaData = record.Get("segment.document.doc_metadata").Value().(map[string]interface{})
+		}
+		r.Metadata = metaData
 		result = append(result, r)
 	}
 

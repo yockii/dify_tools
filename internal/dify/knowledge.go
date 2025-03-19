@@ -107,11 +107,38 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader *multip
 	}
 	// data=json, file=upload
 	body := map[string]interface{}{
-		"doc_metadata":       docMetadata,
 		"indexing_technique": "high_quality",
 		"doc_form":           "hierarchical_model",
 		"process_rule": map[string]interface{}{
-			"mode": "automatic",
+			// "mode": "automatic",
+			"mode": "custom",
+			"rules": map[string]interface{}{
+				"pre_processing_rules": []map[string]interface{}{
+					{
+						"id":      "remove_extra_spaces",
+						"enabled": true,
+					},
+					{
+						"id":      "remove_urls_emails",
+						"enabled": true,
+					},
+				},
+				"segmentation": map[string]interface{}{
+					"separator":  "\n",
+					"max_tokens": 500,
+				},
+				"parent_mode": "full-doc",
+				"subchunk_segmentation": map[string]interface{}{
+					"separator":  "\n",
+					"max_tokens": 200,
+				},
+			},
+		},
+		// 如需提供元数据，必须同时设置以下两项
+		"doc_type": "others",
+		"doc_metadata": map[string]interface{}{
+			"source":      "api_upload",
+			"description": "通过API上传的文档",
 		},
 		"retrieval_model": map[string]interface{}{
 			"search_method":           "hybrid_search",
@@ -263,22 +290,20 @@ func (c *KnowledgeBaseClient) DocumentBatchIndexingStatus(ID, batchID string) (s
 		logger.Error("读取响应失败", logger.F("err", err))
 		return "", err
 	}
-	respJson := gjson.ParseBytes(response)
-	status := respJson.Get("status").String()
-	return status, nil
+	return string(response), nil
 }
 
 func (c *KnowledgeBaseClient) Retrieve(ID, query string, topK int, scoreThreshold float64) (string, error) {
 	body := map[string]interface{}{
 		"query": query,
-		"retrieval_model": map[string]interface{}{
-			"search_method":           "hybrid_search",
-			"reranking_enable":        false,
-			"weights":                 0.7,
-			"top_k":                   topK,
-			"score_threshold":         scoreThreshold,
-			"score_threshold_enabled": scoreThreshold > 0,
-		},
+		// "retrieval_model": map[string]interface{}{
+		// 	"search_method":           "hybrid_search",
+		// 	"reranking_enable":        false,
+		// 	"weights":                 0.7,
+		// 	"top_k":                   topK,
+		// 	"score_threshold":         scoreThreshold,
+		// 	"score_threshold_enabled": scoreThreshold > 0,
+		// },
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {

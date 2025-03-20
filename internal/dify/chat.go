@@ -8,7 +8,9 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strings"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/tidwall/gjson"
 	"github.com/yockii/dify_tools/pkg/logger"
 )
@@ -352,4 +354,33 @@ func (c *ChatClient) UploadFile(fileHeader *multipart.FileHeader, apiSecret, cus
 		return "", err
 	}
 	return string(response), nil
+}
+
+func (c *ChatClient) ProxyFile(targetURI string, ctx *fiber.Ctx) error {
+	fullURL := strings.TrimSuffix(c.baseUrl, "/v1") + "/" + targetURI
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
+		return err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
+		return err
+	}
+	defer resp.Body.Close()
+	// 设置响应头
+	if resp.Header.Get("Content-Type") != "" {
+		ctx.Set("Content-Type", resp.Header.Get("Content-Type"))
+	}
+	// 设置其他可能需要的头信息
+	if resp.Header.Get("Content-Disposition") != "" {
+		ctx.Set("Content-Disposition", resp.Header.Get("Content-Disposition"))
+	}
+	// 设置状态码并直接将响应流写入ctx
+	ctx.Status(resp.StatusCode)
+	// 直接复制响应主体到ctx
+	_, err = io.Copy(ctx, resp.Body)
+	return err
 }

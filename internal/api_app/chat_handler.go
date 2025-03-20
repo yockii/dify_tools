@@ -44,10 +44,11 @@ func (h *ChatHandler) RegisterRoutes(router fiber.Router) {
 }
 
 type ChatMessageRequest struct {
-	AgentID        uint64 `json:"agent_id,string"`
-	CustomID       string `json:"custom_id"`
-	Query          string `json:"query"`
-	ConversationID string `json:"conversation_id"`
+	AgentID        uint64          `json:"agent_id,string"`
+	CustomID       string          `json:"custom_id"`
+	Query          string          `json:"query"`
+	ConversationID string          `json:"conversation_id"`
+	Files          []dify.ChatFile `json:"files"`
 }
 
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
@@ -73,6 +74,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 		},
 		ConversationID:   req.ConversationID,
 		AutoGenerateName: true,
+		Files:            req.Files,
 	}
 
 	chatClient, err := h.GetDifyChatClient(c.Context())

@@ -52,6 +52,7 @@ func (h *ChatHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber
 
 		chatRouter.Post("/upload", h.UploadFile)
 	}
+	router.Get("/files_proxy/*", h.FileProxy)
 }
 
 type ChatMessageRequest struct {
@@ -457,4 +458,23 @@ func (h *ChatHandler) UploadFile(c *fiber.Ctx) error {
 
 		return c.JSON(service.OK(m))
 	}
+}
+
+func (h *ChatHandler) FileProxy(c *fiber.Ctx) error {
+	// 本请求的url为 http://localhost:8080/chat/files_proxy/files/xxxxxx/yyyyy?ssss=ddddd&sss=ccccc
+	// 需要转发到 h.baseUrl + /files/xxxxxx/yyyyy?ssss=ddddd&sss=ccccc，来获取图片返回
+
+	targetURI := c.Params("*") + "?" + string(c.Request().URI().QueryString())
+	chatClient, err := h.GetDifyChatClient(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+	}
+
+	err = chatClient.ProxyFile(targetURI, c)
+	if err != nil {
+		logger.Error("文件代理失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	return nil
 }

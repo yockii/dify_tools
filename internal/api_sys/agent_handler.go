@@ -19,7 +19,11 @@ func RegisterAgentHandler(agentService service.AgentService) {
 	Handlers = append(Handlers, handler)
 }
 
-func (h *AgentHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Handler) {
+func (h *AgentHandler) RegisterRoutesV1_1(router fiber.Router, authMiddleware fiber.Handler) {
+	h.RegisterRoutesV1(router, authMiddleware)
+}
+
+func (h *AgentHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber.Handler) {
 	agentRouter := router.Group("/agent")
 	agentRouter.Use(authMiddleware)
 	{

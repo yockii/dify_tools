@@ -56,12 +56,19 @@ func (s *Server) Start() error {
 
 	// 配置中间件
 	s.setupMiddleware()
+
+	// 注册系统路由
+	s.registerSysHandler()
+	s.registerDifyHandler()
+
 	// 配置系统路由
-	s.setupSystemRoutes()
+	s.setupSystemRoutesV1()
+	s.setupSystemRoutesV1_1()
 	// 配置DIFY路由
-	s.setupDifyRoutes()
+	s.setupDifyRoutesV1()
+	s.setupDifyRoutesV1_1()
 	// 配置应用路由
-	s.setupApplicationRoutes()
+	s.setupApplicationRoutesV1()
 
 	// 启动服务器
 	addr := config.GetServerAddress()
@@ -136,8 +143,7 @@ func (s *Server) setupMiddleware() {
 	}))
 }
 
-func (s *Server) setupSystemRoutes() {
-	// 创建Handler实例
+func (s *Server) registerSysHandler() {
 	sysapi.RegisterUserHandler(
 		s.userSrv,
 		s.authSrv,
@@ -171,7 +177,10 @@ func (s *Server) setupSystemRoutes() {
 		s.applicationSrv,
 		s.usageSrv,
 	)
+}
 
+// setupSystemRoutesV1 配置系统路由对应dify版本 v1.0.1
+func (s *Server) setupSystemRoutesV1() {
 	// 中间件
 	sysAuthMiddleware := middleware.NewAuthMiddleware(s.authSrv, s.sessionSrv, nil)
 
@@ -180,7 +189,7 @@ func (s *Server) setupSystemRoutes() {
 
 	// 注册用户路由
 	for _, handler := range sysapi.Handlers {
-		handler.RegisterRoutes(apiGroup, sysAuthMiddleware)
+		handler.RegisterRoutesV1(apiGroup, sysAuthMiddleware)
 	}
 
 	// 健康检查
@@ -189,7 +198,26 @@ func (s *Server) setupSystemRoutes() {
 	})
 }
 
-func (s *Server) setupDifyRoutes() {
+// setupSystemRoutesV1 配置系统路由对应dify版本 v1.1.0
+func (s *Server) setupSystemRoutesV1_1() {
+	// 中间件
+	sysAuthMiddleware := middleware.NewAuthMiddleware(s.authSrv, s.sessionSrv, nil)
+
+	// API路由组
+	apiGroup := s.app.Group("/sys_api/v1_1")
+
+	// 注册用户路由
+	for _, handler := range sysapi.Handlers {
+		handler.RegisterRoutesV1_1(apiGroup, sysAuthMiddleware)
+	}
+
+	// 健康检查
+	s.app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendString("OK")
+	})
+}
+
+func (s *Server) registerDifyHandler() {
 	difyapi.RegisterDatabaseHandler(
 		s.applicationSrv,
 		s.dataSourceSrv,
@@ -200,15 +228,28 @@ func (s *Server) setupDifyRoutes() {
 		s.applicationSrv,
 		s.knowledgeBaseSrv,
 	)
+}
 
+// setupDifyRoutesV1 配置DIFY路由对应dify版本 v1.0.1
+func (s *Server) setupDifyRoutesV1() {
 	difyApiGroup := s.app.Group("/dify_api/v1")
-	// 注册用户路由
+	// 注册路由
 	for _, handler := range difyapi.Handlers {
-		handler.RegisterRoutes(difyApiGroup)
+		handler.RegisterRoutesV1(difyApiGroup)
 	}
 }
 
-func (s *Server) setupApplicationRoutes() {
+// setupDifyRoutesV1_1 配置DIFY路由对应dify版本 v1.1.0
+func (s *Server) setupDifyRoutesV1_1() {
+	difyApiGroup := s.app.Group("/dify_api/v1_1")
+	// 注册路由
+	for _, handler := range difyapi.Handlers {
+		handler.RegisterRoutesV1_1(difyApiGroup)
+	}
+}
+
+// setupApplicationRoutesV1 配置应用路由对应dify版本 v1.0.1
+func (s *Server) setupApplicationRoutesV1() {
 	appapi.RegisterDocumentHandler(
 		s.knowledgeBaseSrv,
 		s.documentSrv,

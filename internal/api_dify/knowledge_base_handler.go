@@ -23,7 +23,11 @@ func RegisterKnowledgeBaseHandler(
 	Handlers = append(Handlers, handler)
 }
 
-func (h *KnowledgeBaseHandler) RegisterRoutes(router fiber.Router) {
+func (h *KnowledgeBaseHandler) RegisterRoutesV1_1(router fiber.Router) {
+	router.Post("/retrieval", h.RetrievalV1_1)
+}
+
+func (h *KnowledgeBaseHandler) RegisterRoutesV1(router fiber.Router) {
 	router.Post("/retrieval", h.Retrieval)
 }
 
@@ -49,7 +53,7 @@ type DifyRetrievalResponse struct {
 	Records []interface{} `json:"records"`
 }
 
-func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
+func (h *KnowledgeBaseHandler) RetrievalV1_1(c *fiber.Ctx) error {
 	var req DifyRetrievalRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -89,7 +93,7 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 				"error_msg":  "invalid app_secret",
 			})
 		}
-		knowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), app.ID, customID)
+		knowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), app.ID, "")
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error_code": 500,
@@ -98,7 +102,7 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 		}
 	} else {
 		var err error
-		knowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), 0, customID)
+		knowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), 0, "")
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error_code": 500,
@@ -121,7 +125,23 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 		})
 	}
 
-	resp, err := kbClient.Retrieve(knowledgeBase.OuterID, query, req.RetrievalSetting.TopK, req.RetrievalSetting.ScoreThreshold)
+	resp, err := kbClient.Retrieve(knowledgeBase.OuterID, query, req.RetrievalSetting.TopK, req.RetrievalSetting.ScoreThreshold, map[string]interface{}{
+		"mode": "manual",
+		"condition": map[string]interface{}{
+			"operator": "or",
+			"conditions": []map[string]interface{}{
+				{
+					"field_name": "custom_id",
+					"operator":   "is",
+					"value":      customID,
+				},
+				{
+					"field_name": "custom_id",
+					"operator":   "not exists",
+				},
+			},
+		},
+	})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error_code": 500,
@@ -151,4 +171,142 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"records": result,
 	})
+}
+
+func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
+	var req DifyRetrievalRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error_code": 500,
+			"error_msg":  "invalid request",
+		})
+	}
+	if req.Query == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error_code": 400,
+			"error_msg":  "query is required",
+		})
+	}
+	qj := gjson.Parse(req.Query)
+	ak := qj.Get("app_secret").String()
+	customID := qj.Get("custom_id").String()
+	query := qj.Get("query").String()
+	if ak == "" && customID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error_code": 400,
+			"error_msg":  "app_secret or custom_id are required",
+		})
+	}
+
+	var knowledgeBase *model.KnowledgeBase
+	var publickKnowledgeBase *model.KnowledgeBase
+	if ak != "" {
+		app, err := h.applicationService.GetByApiKey(c.Context(), ak)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error_code": 500,
+				"error_msg":  "invalid app_secret",
+			})
+		}
+		if app == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error_code": 400,
+				"error_msg":  "invalid app_secret",
+			})
+		}
+		knowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), app.ID, customID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error_code": 500,
+				"error_msg":  "get knowledge base failed",
+			})
+		}
+		publickKnowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), app.ID, "")
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error_code": 500,
+				"error_msg":  "get knowledge base failed",
+			})
+		}
+	} else {
+		var err error
+		knowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), 0, customID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error_code": 500,
+				"error_msg":  "get knowledge base failed",
+			})
+		}
+		publickKnowledgeBase, err = h.knowledgeBaseService.GetByApplicationIDAndCustomID(c.Context(), 0, "")
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error_code": 500,
+				"error_msg":  "get knowledge base failed",
+			})
+		}
+	}
+	if knowledgeBase == nil && publickKnowledgeBase == nil {
+		return c.JSON(fiber.Map{
+			"error_code": 2001,
+			"error_msg":  "知识库不存在：" + ak + " | " + customID,
+		})
+	}
+
+	kbClient, err := h.knowledgeBaseService.GetDifyKnowledgeBaseClient(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error_code": 500,
+			"error_msg":  "get dify knowledge base client failed",
+		})
+	}
+
+	var result []Record
+
+	if knowledgeBase != nil {
+		resp, err := kbClient.Retrieve(knowledgeBase.OuterID, query, req.RetrievalSetting.TopK, req.RetrievalSetting.ScoreThreshold, nil)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error_code": 500,
+				"error_msg":  "retrieve failed",
+			})
+		}
+		result = append(result, h.getRecordsFromResponse(resp)...)
+	}
+
+	if publickKnowledgeBase != nil {
+		resp, err := kbClient.Retrieve(publickKnowledgeBase.OuterID, query, req.RetrievalSetting.TopK, req.RetrievalSetting.ScoreThreshold, nil)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error_code": 500,
+				"error_msg":  "retrieve failed",
+			})
+		}
+		result = append(result, h.getRecordsFromResponse(resp)...)
+	}
+
+	return c.JSON(fiber.Map{
+		"records": result,
+	})
+}
+
+func (h *KnowledgeBaseHandler) getRecordsFromResponse(resp string) []Record {
+	respJson := gjson.Parse(resp)
+	records := respJson.Get("records").Array()
+
+	var result []Record
+	for _, record := range records {
+		r := Record{
+			Content: record.Get("segment.content").String(),
+			Score:   record.Get("score").Float(),
+			Title:   record.Get("segment.document.name").String(),
+			// Metadata: record.Get("segment.document.doc_metadata").Value().(map[string]interface{}),
+		}
+		metaData := map[string]interface{}{}
+		if record.Get("segment.document.doc_metadata").Exists() {
+			metaData = record.Get("segment.document.doc_metadata").Value().(map[string]interface{})
+		}
+		r.Metadata = metaData
+		result = append(result, r)
+	}
+	return result
 }

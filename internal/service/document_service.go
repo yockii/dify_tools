@@ -96,6 +96,71 @@ func (s *documentService) GetDocument(ctx context.Context, condition *model.Docu
 	return &document, nil
 }
 
+func (s *documentService) AddDocumentV1_1(ctx context.Context, document *model.Document, fileHeader *multipart.FileHeader) (*model.KnowledgeBase, error) {
+	if document.ApplicationID == 0 && document.CustomID == "" {
+		return nil, constant.ErrInvalidParams
+	}
+
+	document.FileName = fileHeader.Filename
+	document.FileSize = fileHeader.Size
+	if duplicated, err := s.CheckDuplicate(document); err != nil {
+		return nil, err
+	} else if duplicated {
+		return nil, constant.ErrRecordDuplicate
+	}
+
+	// 这里因为使用元数据的方式过滤文档，所以一个应用只需要一个通用知识库即可
+	kb, err := s.knowledgeBaseService.GetByApplicationIDAndCustomID(ctx, document.ApplicationID, "")
+	if err != nil {
+		return nil, err
+	}
+	if kb == nil {
+		// 需要创建知识库
+		kb = &model.KnowledgeBase{
+			ApplicationID: document.ApplicationID,
+			CustomID:      document.CustomID,
+		}
+		err = s.knowledgeBaseService.Create(ctx, kb)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	document.KnowledgeBaseID = kb.ID
+
+	kbClient, err := s.knowledgeBaseService.GetDifyKnowledgeBaseClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 上传文件
+	resp, err := kbClient.CreateDocumentByFile(kb.OuterID, fileHeader, map[string]string{
+		"custom_id": document.CustomID,
+		//TODO 后续可以根据需要添加更多的元数据，如分类、标签等
+	})
+	if err != nil {
+		return nil, err
+	}
+	respJson := gjson.Parse(resp)
+	if respJson.Get("status").Exists() && respJson.Get("status").Int() != 200 {
+		logger.Error("上传文件失败", logger.F("resp", resp))
+		return nil, constant.ErrInternalError
+	}
+	document.OuterID = respJson.Get("document.id").String()
+	document.Batch = respJson.Get("batch").String()
+	status := respJson.Get("document.display_status").String()
+	document.Status = s.transferDocumentStatus(status)
+
+	if err := s.Create(ctx, document); err != nil {
+		logger.Error("创建文档失败", logger.F("err", err))
+		return nil, constant.ErrDatabaseError
+	}
+
+	go s.RefreshDocumentStatusUntil(kb.ID, kb.OuterID, document.Batch, document.Status, 5)
+
+	return kb, nil
+}
+
 func (s *documentService) AddDocument(ctx context.Context, document *model.Document, fileHeader *multipart.FileHeader) (*model.KnowledgeBase, error) {
 	if document.ApplicationID == 0 && document.CustomID == "" {
 		return nil, constant.ErrInvalidParams

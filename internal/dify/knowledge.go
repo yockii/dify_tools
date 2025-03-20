@@ -134,18 +134,16 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader *multip
 				},
 			},
 		},
-		// 如需提供元数据，必须同时设置以下两项
-		"doc_type": "others",
-		"doc_metadata": map[string]interface{}{
-			"source":      "api_upload",
-			"description": "通过API上传的文档",
-		},
 		"retrieval_model": map[string]interface{}{
 			"search_method":           "hybrid_search",
 			"reranking_enable":        false,
 			"top_k":                   5,
 			"score_threshold_enabled": false,
 		},
+	}
+	if len(docMetadata) > 0 {
+		body["doc_type"] = "others"
+		body["doc_metadata"] = docMetadata
 	}
 	// body json序列化后的字符串放入data字段
 	dataBytes, err := json.Marshal(body)
@@ -293,18 +291,22 @@ func (c *KnowledgeBaseClient) DocumentBatchIndexingStatus(ID, batchID string) (s
 	return string(response), nil
 }
 
-func (c *KnowledgeBaseClient) Retrieve(ID, query string, topK int, scoreThreshold float64) (string, error) {
+func (c *KnowledgeBaseClient) Retrieve(ID, query string, topK int, scoreThreshold float64, metadataCondition map[string]interface{}) (string, error) {
 	body := map[string]interface{}{
 		"query": query,
-		// "retrieval_model": map[string]interface{}{
-		// 	"search_method":           "hybrid_search",
-		// 	"reranking_enable":        false,
-		// 	"weights":                 0.7,
-		// 	"top_k":                   topK,
-		// 	"score_threshold":         scoreThreshold,
-		// 	"score_threshold_enabled": scoreThreshold > 0,
-		// },
+		"retrieval_model": map[string]interface{}{
+			"search_method":           "hybrid_search",
+			"reranking_enable":        false,
+			"weights":                 0.7,
+			"top_k":                   topK,
+			"score_threshold":         scoreThreshold,
+			"score_threshold_enabled": scoreThreshold > 0,
+		},
 	}
+	if len(metadataCondition) > 0 {
+		body["metadata_filtering_conditions"] = metadataCondition
+	}
+
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		logger.Error("序列化请求参数失败", logger.F("err", err))

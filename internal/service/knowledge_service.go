@@ -139,10 +139,14 @@ func (s *knowledgeBaseService) Create(ctx context.Context, knowledgeBase *model.
 		}
 		appName = app.Name
 	}
+	suffix := "公共知识库"
+	if knowledgeBase.CustomID != "" {
+		suffix = util.NewShortID()
+	}
 	if knowledgeBase.KnowledgeBaseName == "" {
-		knowledgeBase.KnowledgeBaseName = fmt.Sprintf("%s知识库-%s", appName, util.NewShortID())
+		knowledgeBase.KnowledgeBaseName = fmt.Sprintf("%s知识库-%s", appName, suffix)
 	} else if !strings.Contains(knowledgeBase.KnowledgeBaseName, "-") {
-		knowledgeBase.KnowledgeBaseName += "-" + util.NewShortID()
+		knowledgeBase.KnowledgeBaseName += "-" + suffix
 	}
 
 	kbClient, err := s.GetDifyKnowledgeBaseClient(ctx)

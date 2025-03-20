@@ -47,7 +47,11 @@ func RegisterAppHandler(
 	Handlers = append(Handlers, handler)
 }
 
-func (h *AppHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Handler) {
+func (h *AppHandler) RegisterRoutesV1_1(router fiber.Router, authMiddleware fiber.Handler) {
+	h.RegisterRoutesV1(router, authMiddleware)
+}
+
+func (h *AppHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber.Handler) {
 	apps := router.Group("/applications", authMiddleware)
 	{
 		apps.Post("/new", h.CreateApp)

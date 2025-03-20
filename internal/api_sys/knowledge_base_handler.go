@@ -25,7 +25,24 @@ func RegisterKnowledgeBaseHandler(knowledgeService service.KnowledgeBaseService,
 	Handlers = append(Handlers, handler)
 }
 
-func (h *KnowledgeBaseHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Handler) {
+func (h *KnowledgeBaseHandler) RegisterRoutesV1_1(router fiber.Router, authMiddleware fiber.Handler) {
+	knowledgeBaseRouter := router.Group("/knowledge_base")
+	knowledgeBaseRouter.Use(authMiddleware)
+	{
+		knowledgeBaseRouter.Post("/new", h.CreateKnowledgeBase)
+		knowledgeBaseRouter.Get("/list", h.GetKnowledgeBaseList)
+		// knowledgeBaseRouter.Post("/delete", h.DeleteKnowledgeBase)
+	}
+	documentRouter := router.Group("/document")
+	documentRouter.Use(authMiddleware)
+	{
+		documentRouter.Post("/upload", h.CreateDocumentV1_1)
+		documentRouter.Get("/list", h.GetDocumentList)
+		documentRouter.Post("/delete", h.DeleteDocument)
+	}
+}
+
+func (h *KnowledgeBaseHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber.Handler) {
 	knowledgeBaseRouter := router.Group("/knowledge_base")
 	knowledgeBaseRouter.Use(authMiddleware)
 	{
@@ -99,6 +116,36 @@ func (h *KnowledgeBaseHandler) GetKnowledgeBaseList(c *fiber.Ctx) error {
 
 	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))
 
+}
+
+func (h *KnowledgeBaseHandler) CreateDocumentV1_1(c *fiber.Ctx) error {
+	if form, err := c.MultipartForm(); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	} else {
+		user := c.Locals("user").(*model.User)
+		customID := strconv.FormatUint(user.ID, 10)
+
+		files := form.File["files"]
+		if len(files) == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+
+		file := files[0]
+		document := &model.Document{
+			CustomID: customID,
+			FileName: file.Filename,
+			FileSize: file.Size,
+		}
+		knowledgeBase, err := h.documentService.AddDocumentV1_1(c.Context(), document, file)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
+		}
+
+		return c.JSON(service.OK(fiber.Map{
+			"knowledge_base": knowledgeBase,
+			"document":       document,
+		}))
+	}
 }
 
 func (h *KnowledgeBaseHandler) CreateDocument(c *fiber.Ctx) error {

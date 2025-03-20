@@ -36,7 +36,11 @@ func RegisterUserHandler(
 	Handlers = append(Handlers, handler)
 }
 
-func (h *UserHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Handler) {
+func (h *UserHandler) RegisterRoutesV1_1(router fiber.Router, authMiddleware fiber.Handler) {
+	h.RegisterRoutesV1(router, authMiddleware)
+}
+
+func (h *UserHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber.Handler) {
 	auth := router.Group("/auth")
 	{
 		auth.Post("/login", h.Login)

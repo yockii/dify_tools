@@ -32,7 +32,11 @@ func RegisterDatabaseHandler(
 	Handlers = append(Handlers, handler)
 }
 
-func (h *DatabaseHandler) RegisterRoutes(router fiber.Router) {
+func (h *DatabaseHandler) RegisterRoutesV1_1(router fiber.Router) {
+	h.RegisterRoutesV1(router)
+}
+
+func (h *DatabaseHandler) RegisterRoutesV1(router fiber.Router) {
 	router.Get("/databases", middleware.NewAppMiddleware(h.applicationService), h.GetDatabases)
 	router.Get("/schema", middleware.NewAppMiddleware(h.applicationService), h.GetDatabaseSchema)
 	router.Post("/executeSql", middleware.NewAppMiddleware(h.applicationService), h.ExecuteSqlForDatabase)

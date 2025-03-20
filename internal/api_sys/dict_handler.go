@@ -26,7 +26,11 @@ func RegisterDictHandler(
 	Handlers = append(Handlers, handler)
 }
 
-func (h *DictHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Handler) {
+func (h *DictHandler) RegisterRoutesV1_1(router fiber.Router, authMiddleware fiber.Handler) {
+	h.RegisterRoutesV1(router, authMiddleware)
+}
+
+func (h *DictHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber.Handler) {
 	r := router.Group("/dict", authMiddleware)
 	{
 		r.Post("/new", h.Create)

@@ -35,7 +35,11 @@ func RegisterChatHandler(
 	Handlers = append(Handlers, handler)
 }
 
-func (h *ChatHandler) RegisterRoutes(router fiber.Router, authMiddleware fiber.Handler) {
+func (h *ChatHandler) RegisterRoutesV1_1(router fiber.Router, authMiddleware fiber.Handler) {
+	h.RegisterRoutesV1(router, authMiddleware)
+}
+
+func (h *ChatHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber.Handler) {
 	chatRouter := router.Group("/chat")
 	chatRouter.Use(authMiddleware)
 	{

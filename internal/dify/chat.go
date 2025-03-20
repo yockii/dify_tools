@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/tidwall/gjson"
@@ -291,4 +292,64 @@ func (c *ChatClient) StopStreamingChat(taskID, customID, apiSecret string) error
 	}
 	defer resp.Body.Close()
 	return nil
+}
+
+func (c *ChatClient) UploadFile(fileHeader *multipart.FileHeader, apiSecret, customID string) (string, error) {
+	fileBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(fileBody)
+	part, err := writer.CreateFormFile("file", fileHeader.Filename)
+	if err != nil {
+		logger.Error("创建表单字段失败", logger.F("err", err))
+		return "", err
+	}
+	file, err := fileHeader.Open()
+	if err != nil {
+		logger.Error("打开文件失败", logger.F("err", err))
+		return "", err
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		logger.Error("写入文件失败", logger.F("err", err))
+		return "", err
+	}
+
+	// form-data中的其他字段 user
+	err = writer.WriteField("user", customID)
+	if err != nil {
+		logger.Error("写入表单字段失败", logger.F("err", err))
+		return "", err
+	}
+	err = writer.Close()
+	if err != nil {
+		logger.Error("关闭表单失败", logger.F("err", err))
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", c.baseUrl+"/files/upload", fileBody)
+	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
+		return "", err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	if apiSecret != "" {
+		req.Header.Set("Authorization", "Bearer "+apiSecret)
+	} else if c.defaultAPISecret != "" {
+		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
+	} else {
+		logger.Error("未提供API密钥")
+		return "", fmt.Errorf("未提供API密钥")
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
+		return "", err
+	}
+	defer resp.Body.Close()
+	response, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
+		return "", err
+	}
+	return string(response), nil
 }

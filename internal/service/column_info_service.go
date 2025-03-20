@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/pkg/logger"
@@ -13,7 +15,7 @@ type columnInfoService struct {
 
 func NewColumnInfoService() *columnInfoService {
 	srv := new(columnInfoService)
-	srv.BaseServiceImpl = NewBaseService[*model.ColumnInfo](BaseServiceConfig[*model.ColumnInfo]{
+	srv.BaseServiceImpl = NewBaseService(BaseServiceConfig[*model.ColumnInfo]{
 		NewModel:       srv.NewModel,
 		CheckDuplicate: srv.CheckDuplicate,
 		DeleteCheck:    srv.DeleteCheck,
@@ -63,4 +65,14 @@ func (s *columnInfoService) BuildCondition(query *gorm.DB, condition *model.Colu
 		query = query.Where("comment LIKE ?", "%"+condition.Comment+"%")
 	}
 	return query
+}
+
+func (s *columnInfoService) ListSchemaForDify(ctx context.Context, condition *model.ColumnInfo) ([]*model.ColumnInfo, error) {
+	var cl []*model.ColumnInfo
+	if err := s.db.Select("Name", "Type", "Comment").
+		Where(condition).Find(&cl).Error; err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
+		return nil, constant.ErrDatabaseError
+	}
+	return cl, nil
 }

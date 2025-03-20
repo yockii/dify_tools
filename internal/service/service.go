@@ -88,6 +88,7 @@ type ApplicationService interface {
 type DataSourceService interface {
 	BaseService[*model.DataSource]
 	Sync(ctx context.Context, id uint64) error
+	ListForDify(ctx context.Context, condition *model.DataSource) ([]*model.DataSource, error)
 }
 
 type TableInfoService interface {
@@ -96,6 +97,7 @@ type TableInfoService interface {
 
 type ColumnInfoService interface {
 	BaseService[*model.ColumnInfo]
+	ListSchemaForDify(ctx context.Context, condition *model.ColumnInfo) ([]*model.ColumnInfo, error)
 }
 
 type KnowledgeBaseService interface {

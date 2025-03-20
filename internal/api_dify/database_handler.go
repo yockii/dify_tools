@@ -48,9 +48,9 @@ func (h *DatabaseHandler) GetDatabases(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidCredential))
 	}
 
-	list, _, err := h.dataSourceService.List(c.Context(), &model.DataSource{
+	list, err := h.dataSourceService.ListForDify(c.Context(), &model.DataSource{
 		ApplicationID: application.ID,
-	}, 0, 100)
+	})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(err))
 	}
@@ -100,16 +100,12 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 			twc := new(TableWithColumns)
 			twc.TableInfo = t
 			var cl []*model.ColumnInfo
-			var ct int64 = 1
-			for len(cl) < int(ct) {
-				var tempList []*model.ColumnInfo
-				tempList, ct, err = h.columnInfoService.List(c.Context(), &model.ColumnInfo{
-					TableID: t.ID,
-				}, len(cl), 100)
-				if err != nil {
-					return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
-				}
-				cl = append(cl, tempList...)
+
+			cl, err = h.columnInfoService.ListSchemaForDify(c.Context(), &model.ColumnInfo{
+				TableID: t.ID,
+			})
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 			}
 			twc.Columns = cl
 			tables = append(tables, twc)
@@ -118,6 +114,7 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 
 	return c.JSON(service.OK(tables))
 }
+
 func (h *DatabaseHandler) ExecuteSqlForDatabase(c *fiber.Ctx) error {
 	application, _ := c.Locals("application").(*model.Application)
 	if application == nil {

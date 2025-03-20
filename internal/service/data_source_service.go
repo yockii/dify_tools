@@ -235,3 +235,13 @@ func (s *dataSourceService) Sync(ctx context.Context, id uint64) error {
 
 	return nil
 }
+
+func (s *dataSourceService) ListForDify(ctx context.Context, condition *model.DataSource) ([]*model.DataSource, error) {
+	var list []*model.DataSource
+	condition.Status = 1
+	if err := s.db.Where(condition).Select("ID", "Name", "Type").Find(&list).Error; err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
+		return nil, constant.ErrDatabaseError
+	}
+	return list, nil
+}

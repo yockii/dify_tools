@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/tidwall/gjson"
 	"github.com/valyala/fasthttp"
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/dify"
@@ -48,15 +49,18 @@ func (h *ChatHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber
 		chatRouter.Get("/history", h.GetSessionHistory)
 		chatRouter.Post("/stop", h.StopChatFlow)
 		chatRouter.Post("/generate_ppt", h.GeneratePPT)
+
+		chatRouter.Post("/upload", h.UploadFile)
 	}
 }
 
 type ChatMessageRequest struct {
-	Query          string `json:"query"`
-	ConversationID string `json:"conversation_id"`
-	AppSecret      string `json:"app_secret"`
-	CustomID       string `json:"custom_id"`
-	AgentID        uint64 `json:"agent_id,string,omitzero"`
+	Query          string          `json:"query"`
+	ConversationID string          `json:"conversation_id"`
+	AppSecret      string          `json:"app_secret"`
+	CustomID       string          `json:"custom_id"`
+	AgentID        uint64          `json:"agent_id,string,omitempty"`
+	Files          []dify.ChatFile `json:"files,omitempty"`
 }
 
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
@@ -99,13 +103,14 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 	chatMessageRequest := &dify.ChatMessageRequest{
 		User:         strconv.FormatUint(user.ID, 10),
 		ResponseMode: "streaming",
-		Inputs: map[string]interface{}{
+		Inputs: map[string]any{
 			"custom_id":  customID,
 			"app_secret": appSecret,
 		},
 		Query:            req.Query,
 		ConversationID:   req.ConversationID,
 		AutoGenerateName: true,
+		Files:            req.Files,
 	}
 
 	chatClient, err := h.GetDifyChatClient(c.Context())
@@ -386,4 +391,70 @@ func (h *ChatHandler) GeneratePPT(c *fiber.Ctx) error {
 	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation")
 	c.Set("Content-Length", strconv.Itoa(len(buf)))
 	return c.Status(fiber.StatusOK).Send(buf)
+}
+
+func (h *ChatHandler) UploadFile(c *fiber.Ctx) error {
+	if form, err := c.MultipartForm(); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	} else {
+		user := c.Locals("user").(*model.User)
+		customID := strconv.FormatUint(user.ID, 10)
+
+		var req SessionListRequest
+		if err := c.QueryParser(&req); err != nil {
+			logger.Error("解析请求参数失败", logger.F("err", err))
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+
+		var appID uint64
+		if req.AppSecret != "" {
+			app, err := h.applicationService.GetByApiKey(c.Context(), req.AppSecret)
+			if err != nil {
+				logger.Error("获取应用失败", logger.F("err", err))
+				return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+			}
+			if app == nil {
+				return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+			}
+			appID = app.ID
+		}
+
+		appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), appID, req.AgentID)
+		if err != nil {
+			logger.Error("获取应用代理失败", logger.F("err", err))
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+		}
+		apiSecret := ""
+		if appAgent != nil {
+			apiSecret = appAgent.Agent.ApiSecret
+		}
+
+		files := form.File["files"]
+		if len(files) == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+
+		file := files[0]
+
+		chatClient, err := h.GetDifyChatClient(c.Context())
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+		}
+
+		response, err := chatClient.UploadFile(file, apiSecret, customID)
+		if err != nil {
+			logger.Error("上传文件失败", logger.F("err", err))
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+		}
+
+		j := gjson.Parse(response)
+		// 转为map[string]string
+		m := make(map[string]string)
+		j.ForEach(func(key, value gjson.Result) bool {
+			m[key.String()] = value.String()
+			return true
+		})
+
+		return c.JSON(service.OK(m))
+	}
 }

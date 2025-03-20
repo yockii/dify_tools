@@ -161,6 +161,7 @@ func (s *applicationService) GetApplicationAgent(ctx context.Context, applicatio
 	agentMap := s.appAgentMap[applicationID]
 	useDefaultAgent := agentID == 0
 
+	var agent model.ApplicationAgent
 	if useDefaultAgent {
 		// 未指定代理，使用默认代理
 		defaultAgentIDDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDefaultAgentID)
@@ -177,18 +178,27 @@ func (s *applicationService) GetApplicationAgent(ctx context.Context, applicatio
 			logger.Warn("默认代理ID配置错误", logger.F("dict_id", defaultAgentIDDict.ID))
 			return nil, constant.ErrDictNotConfigured
 		}
+		var defaultAgentInstance model.Agent
+		err = s.db.Where("id = ?", agentID).Take(&defaultAgentInstance).Error
+		if err != nil {
+			logger.Error("查询记录失败", logger.F("error", err))
+			return nil, constant.ErrDatabaseError
+		}
+		agent = model.ApplicationAgent{
+			ApplicationID: applicationID,
+			AgentID:       agentID,
+			Agent:         &defaultAgentInstance,
+		}
+	} else {
+		err := s.db.Where(&model.ApplicationAgent{
+			AgentID: agentID,
+		}).Where("application_id = ?", applicationID).Preload("Agent").
+			First(&agent).Error
+		if err != nil {
+			logger.Error("查询记录失败", logger.F("error", err))
+			return nil, constant.ErrDatabaseError
+		}
 	}
-
-	var agent model.ApplicationAgent
-	err := s.db.Where(&model.ApplicationAgent{
-		AgentID: agentID,
-	}).Where("application_id = ?", applicationID).Preload("Agent").
-		First(&agent).Error
-	if err != nil {
-		logger.Error("查询记录失败", logger.F("error", err))
-		return nil, constant.ErrDatabaseError
-	}
-
 	agentMap[agentID] = &agent
 	if useDefaultAgent {
 		// 缓存默认代理

@@ -51,6 +51,7 @@ type ChatMessageRequest struct {
 	Query          string `json:"query"`
 	ConversationID string `json:"conversation_id"`
 	AppSecret      string `json:"app_secret"`
+	CustomID       string `json:"custom_id"`
 	AgentID        uint64 `json:"agent_id,string,omitzero"`
 }
 
@@ -88,6 +89,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 		}
 		appID = app.ID
+		customID = req.CustomID
 	}
 
 	chatMessageRequest := &dify.ChatMessageRequest{

@@ -384,3 +384,37 @@ func (c *ChatClient) ProxyFile(targetURI string, ctx *fiber.Ctx) error {
 	_, err = io.Copy(ctx, resp.Body)
 	return err
 }
+
+func (c *ChatClient) DeleteConversation(conversationID, customID, apiSecret string) (string, error) {
+	// body 中的 user 字段
+	reqBody := fmt.Sprintf(`{"user": "%s"}`, customID)
+
+	req, err := http.NewRequest("DELETE", c.baseUrl+"/conversations/"+conversationID, strings.NewReader(reqBody))
+	if err != nil {
+		logger.Error("创建请求失败", logger.F("err", err))
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if apiSecret != "" {
+		req.Header.Set("Authorization", "Bearer "+apiSecret)
+	} else if c.defaultAPISecret != "" {
+		req.Header.Set("Authorization", "Bearer "+c.defaultAPISecret)
+	} else {
+		logger.Error("未提供API密钥")
+		return "", fmt.Errorf("未提供API密钥")
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		logger.Error("请求失败", logger.F("err", err))
+		return "", err
+	}
+	defer resp.Body.Close()
+	response, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("读取响应失败", logger.F("err", err))
+		return "", err
+	}
+	return string(response), nil
+}

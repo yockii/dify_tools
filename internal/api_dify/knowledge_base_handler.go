@@ -36,21 +36,33 @@ type RetrievalSetting struct {
 	ScoreThreshold float64 `json:"score_threshold"`
 }
 
+type Condition struct {
+	Name               string `json:"name"`
+	ComparisonOperator string `json:"comparison_operator"`
+	Value              string `json:"value"`
+}
+
+type MetadataCondition struct {
+	LogicalOperator string    `json:"logical_operator"`
+	Conditions      Condition `json:"conditions"`
+}
+
 type DifyRetrievalRequest struct {
-	KnowledgeID      string           `json:"knowledge_id"`
-	Query            string           `json:"query"`
-	RetrievalSetting RetrievalSetting `json:"retrieval_setting"`
+	KnowledgeID       string            `json:"knowledge_id"`
+	Query             string            `json:"query"`
+	RetrievalSetting  RetrievalSetting  `json:"retrieval_setting"`
+	MetadataCondition MetadataCondition `json:"metadata_condition"`
 }
 
 type Record struct {
-	Content  string                 `json:"content"`
-	Score    float64                `json:"score"`
-	Title    string                 `json:"title"`
-	Metadata map[string]interface{} `json:"metadata"`
+	Content  string         `json:"content"`
+	Score    float64        `json:"score"`
+	Title    string         `json:"title"`
+	Metadata map[string]any `json:"metadata"`
 }
 
 type DifyRetrievalResponse struct {
-	Records []interface{} `json:"records"`
+	Records []Record `json:"records"`
 }
 
 func (h *KnowledgeBaseHandler) RetrievalV1_1(c *fiber.Ctx) error {
@@ -168,8 +180,8 @@ func (h *KnowledgeBaseHandler) RetrievalV1_1(c *fiber.Ctx) error {
 		result = append(result, r)
 	}
 
-	return c.JSON(fiber.Map{
-		"records": result,
+	return c.JSON(&DifyRetrievalResponse{
+		Records: result,
 	})
 }
 
@@ -284,8 +296,8 @@ func (h *KnowledgeBaseHandler) Retrieval(c *fiber.Ctx) error {
 		result = append(result, h.getRecordsFromResponse(resp)...)
 	}
 
-	return c.JSON(fiber.Map{
-		"records": result,
+	return c.JSON(&DifyRetrievalResponse{
+		Records: result,
 	})
 }
 
@@ -301,9 +313,9 @@ func (h *KnowledgeBaseHandler) getRecordsFromResponse(resp string) []Record {
 			Title:   record.Get("segment.document.name").String(),
 			// Metadata: record.Get("segment.document.doc_metadata").Value().(map[string]interface{}),
 		}
-		metaData := map[string]interface{}{}
+		metaData := map[string]any{}
 		if record.Get("segment.document.doc_metadata").Exists() {
-			metaData = record.Get("segment.document.doc_metadata").Value().(map[string]interface{})
+			// metaData = record.Get("segment.document.doc_metadata").Value().(map[string]any)
 		}
 		r.Metadata = metaData
 		result = append(result, r)

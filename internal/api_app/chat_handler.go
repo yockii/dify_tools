@@ -3,14 +3,17 @@
 import (
 	"bufio"
 	"context"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/tidwall/gjson"
 	"github.com/valyala/fasthttp"
 	"github.com/yockii/dify_tools/internal/constant"
 	"github.com/yockii/dify_tools/internal/dify"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
 	"github.com/yockii/dify_tools/pkg/logger"
+	"github.com/yockii/dify_tools/pkg/pptgen"
 )
 
 type ChatHandler struct {
@@ -40,7 +43,14 @@ func (h *ChatHandler) RegisterRoutes(router fiber.Router) {
 		chatRouter.Get("/history", h.GetSessionHistory)
 		chatRouter.Post("/stop", h.StopChatFlow)
 		chatRouter.Get("/usage", h.GetUsage)
+
+		chatRouter.Post("/generate_ppt", h.GeneratePPT)
+
+		chatRouter.Post("/del_conversation", h.DeleteConversation)
+
+		chatRouter.Post("/upload", h.UploadFile)
 	}
+	router.Get("/files_proxy/*", h.FileProxy)
 }
 
 type ChatMessageRequest struct {
@@ -294,4 +304,192 @@ func (h *ChatHandler) GetUsage(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(service.OK(service.NewListResponse(list, total, offset, limit)))
+}
+
+type GeneratePPTRequest struct {
+	TemplateType string `json:"template_type"`
+	ThemeColor   string `json:"theme_color"`
+	FontFamily   string `json:"font_family"`
+	Content      string `json:"content"`
+}
+
+func (h *ChatHandler) GeneratePPT(c *fiber.Ctx) error {
+	var req GeneratePPTRequest
+	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析请求参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if req.Content == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	// 检查和映射模板类型
+	var templateEnum pptgen.TemplateType
+	switch req.TemplateType {
+	case "business":
+		templateEnum = pptgen.TemplateBusiness
+	case "academic":
+		templateEnum = pptgen.TemplateAcademic
+	case "minimalist":
+		templateEnum = pptgen.TemplateMinimalist
+	default:
+		logger.Error("无效的模板类型", logger.F("template_type", req.TemplateType))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	pptGenerator := pptgen.NewPPTGenerator()
+	config := pptgen.TemplateConfig{
+		Type:       templateEnum,
+		ThemeColor: req.ThemeColor,
+		FontFamily: req.FontFamily,
+	}
+
+	buf, err := pptGenerator.GeneratePPTX(config, req.Content)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	// 下载文件流
+	c.Set("Content-Disposition", "attachment; filename=generated.pptx")
+	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation")
+	c.Set("Content-Length", strconv.Itoa(len(buf)))
+	return c.Status(fiber.StatusOK).Send(buf)
+}
+
+type SessionListRequest struct {
+	CustomID string `json:"custom_id"`
+	AgentID  uint64 `json:"agent_id,string,omitzero"`
+}
+
+func (h *ChatHandler) UploadFile(c *fiber.Ctx) error {
+	if form, err := c.MultipartForm(); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	} else {
+		application, ok := c.Locals("application").(*model.Application)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
+		}
+		if application.ID == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+
+		var req SessionListRequest
+		if err := c.QueryParser(&req); err != nil {
+			logger.Error("解析请求参数失败", logger.F("err", err))
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+
+		appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, req.AgentID)
+		if err != nil {
+			logger.Error("获取应用代理失败", logger.F("err", err))
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+		}
+		apiSecret := ""
+		if appAgent != nil {
+			apiSecret = appAgent.Agent.ApiSecret
+		}
+
+		files := form.File["files"]
+		if len(files) == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+		}
+
+		file := files[0]
+
+		chatClient, err := h.GetDifyChatClient(c.Context())
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+		}
+
+		response, err := chatClient.UploadFile(file, apiSecret, req.CustomID)
+		if err != nil {
+			logger.Error("上传文件失败", logger.F("err", err))
+			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+		}
+
+		j := gjson.Parse(response)
+		// 转为map[string]string
+		m := make(map[string]string)
+		j.ForEach(func(key, value gjson.Result) bool {
+			m[key.String()] = value.String()
+			return true
+		})
+
+		return c.JSON(service.OK(m))
+	}
+}
+
+func (h *ChatHandler) FileProxy(c *fiber.Ctx) error {
+	targetURI := c.Params("*") + "?" + string(c.Request().URI().QueryString())
+	chatClient, err := h.GetDifyChatClient(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+	}
+
+	err = chatClient.ProxyFile(targetURI, c)
+	if err != nil {
+		logger.Error("文件代理失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	return nil
+}
+
+type DeleteConversationRequest struct {
+	ConversationID string
+	AgentID        uint64
+	CustomID       string
+}
+
+func (r *DeleteConversationRequest) UnmarshalJSON(data []byte) error {
+	j := gjson.Parse(string(data))
+	r.ConversationID = j.Get("conversation_id").String()
+	r.AgentID = j.Get("agent_id").Uint()
+	r.CustomID = j.Get("custom_id").String()
+	return nil
+}
+
+func (h *ChatHandler) DeleteConversation(c *fiber.Ctx) error {
+	application, ok := c.Locals("application").(*model.Application)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
+	}
+	if application.ID == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	var req DeleteConversationRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析请求参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if req.ConversationID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	chatClient, err := h.GetDifyChatClient(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+	}
+
+	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, req.AgentID)
+	if err != nil {
+		logger.Error("获取应用代理失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+	apiSecret := ""
+	if appAgent != nil {
+		apiSecret = appAgent.Agent.ApiSecret
+	}
+
+	_, err = chatClient.DeleteConversation(req.ConversationID, req.CustomID, apiSecret)
+	if err != nil {
+		logger.Error("删除会话失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	return c.JSON(service.OK(true))
 }

@@ -48,7 +48,7 @@ func (c *KnowledgeBaseClient) CreateDocumentByText(ID, docName, docContent strin
 		"text":               docContent,
 		"doc_metadata":       docMetadata,
 		"indexing_technique": "high_quality",
-		"doc_form":           "hierarchical_model",
+		"doc_form":           "text_model", //"hierarchical_model",
 		"process_rule": map[string]interface{}{
 			"mode": "automatic",
 		},
@@ -108,33 +108,33 @@ func (c *KnowledgeBaseClient) CreateDocumentByFile(ID string, fileHeader *multip
 	// data=json, file=upload
 	body := map[string]interface{}{
 		"indexing_technique": "high_quality",
-		"doc_form":           "hierarchical_model",
-		"process_rule": map[string]interface{}{
-			// "mode": "automatic",
-			"mode": "custom",
-			"rules": map[string]interface{}{
-				"pre_processing_rules": []map[string]interface{}{
-					{
-						"id":      "remove_extra_spaces",
-						"enabled": true,
-					},
-					{
-						"id":      "remove_urls_emails",
-						"enabled": true,
-					},
-				},
-				"segmentation": map[string]interface{}{
-					"separator":  "\n",
-					"max_tokens": 500,
-				},
-				"parent_mode": "full-doc",
-				"subchunk_segmentation": map[string]interface{}{
-					"separator":  "\n",
-					"max_tokens": 200,
-				},
-			},
+		"doc_form":           "text_model", // "hierarchical_model",
+		"process_rule": map[string]any{
+			"mode": "automatic",
+			// "mode": "custom",
+			// "rules": map[string]interface{}{
+			// 	"pre_processing_rules": []map[string]interface{}{
+			// 		{
+			// 			"id":      "remove_extra_spaces",
+			// 			"enabled": true,
+			// 		},
+			// 		{
+			// 			"id":      "remove_urls_emails",
+			// 			"enabled": true,
+			// 		},
+			// 	},
+			// 	"segmentation": map[string]interface{}{
+			// 		"separator":  "\n",
+			// 		"max_tokens": 500,
+			// 	},
+			// 	"parent_mode": "full-doc",
+			// 	"subchunk_segmentation": map[string]interface{}{
+			// 		"separator":  "\n",
+			// 		"max_tokens": 200,
+			// 	},
+			// },
 		},
-		"retrieval_model": map[string]interface{}{
+		"retrieval_model": map[string]any{
 			"search_method":           "hybrid_search",
 			"reranking_enable":        false,
 			"top_k":                   5,

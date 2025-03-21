@@ -50,6 +50,8 @@ func (h *ChatHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber
 		chatRouter.Post("/stop", h.StopChatFlow)
 		chatRouter.Post("/generate_ppt", h.GeneratePPT)
 
+		chatRouter.Post("/del_conversation", h.DeleteConversation)
+
 		chatRouter.Post("/upload", h.UploadFile)
 	}
 	router.Get("/files_proxy/*", h.FileProxy)
@@ -477,4 +479,48 @@ func (h *ChatHandler) FileProxy(c *fiber.Ctx) error {
 	}
 
 	return nil
+}
+
+func (h *ChatHandler) DeleteConversation(c *fiber.Ctx) error {
+	user := c.Locals("user").(*model.User)
+	if user == nil {
+		logger.Error("获取用户信息失败", logger.F("err", "user is nil"))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrUnauthorized))
+	}
+
+	var req struct {
+		ConversationID string `json:"conversation_id"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析请求参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if req.ConversationID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	chatClient, err := h.GetDifyChatClient(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDictNotConfigured))
+	}
+
+	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), 0, 0)
+	if err != nil {
+		logger.Error("获取应用代理失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+	apiSecret := ""
+	if appAgent != nil {
+		apiSecret = appAgent.Agent.ApiSecret
+	}
+
+	_, err = chatClient.DeleteConversation(req.ConversationID, strconv.FormatUint(user.ID, 10), apiSecret)
+	if err != nil {
+		logger.Error("删除会话失败", logger.F("err", err))
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	return c.JSON(service.OK(true))
 }

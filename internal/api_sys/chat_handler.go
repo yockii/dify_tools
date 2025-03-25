@@ -13,6 +13,7 @@ import (
 	"github.com/yockii/dify_tools/internal/dify"
 	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
+	"github.com/yockii/dify_tools/pkg/docgen"
 	"github.com/yockii/dify_tools/pkg/logger"
 	"github.com/yockii/dify_tools/pkg/pptgen"
 )
@@ -49,6 +50,7 @@ func (h *ChatHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber
 		chatRouter.Get("/history", h.GetSessionHistory)
 		chatRouter.Post("/stop", h.StopChatFlow)
 		chatRouter.Post("/generate_ppt", h.GeneratePPT)
+		chatRouter.Post("/generate_word", h.GenerateWord)
 
 		chatRouter.Post("/del_conversation", h.DeleteConversation)
 
@@ -397,6 +399,34 @@ func (h *ChatHandler) GeneratePPT(c *fiber.Ctx) error {
 	// 下载文件流
 	c.Set("Content-Disposition", "attachment; filename=generated.pptx")
 	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation")
+	c.Set("Content-Length", strconv.Itoa(len(buf)))
+	return c.Status(fiber.StatusOK).Send(buf)
+}
+
+type GenerateWordRequest struct {
+	Content string `json:"content"`
+}
+
+func (h *ChatHandler) GenerateWord(c *fiber.Ctx) error {
+	var req GenerateWordRequest
+	if err := c.BodyParser(&req); err != nil {
+		logger.Error("解析请求参数失败", logger.F("err", err))
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+
+	if req.Content == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
+	}
+	wordGenerator := docgen.NewDocGenerator()
+
+	buf, err := wordGenerator.RenderString(req.Content)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
+	}
+
+	// 下载文件流, docx
+	c.Set("Content-Disposition", "attachment; filename=generated.docx")
+	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 	c.Set("Content-Length", strconv.Itoa(len(buf)))
 	return c.Status(fiber.StatusOK).Send(buf)
 }

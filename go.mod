@@ -18,6 +18,7 @@ require (
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
+	github.com/yuin/goldmark v1.7.8
 )
 
 require (

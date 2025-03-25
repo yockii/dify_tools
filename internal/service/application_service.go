@@ -115,9 +115,8 @@ func (s *applicationService) UpdateHook(ctx context.Context, record *model.Appli
 
 func (s *applicationService) ApplicationAgents(ctx context.Context, applicationID uint64) ([]*model.ApplicationAgent, error) {
 	var agents []*model.ApplicationAgent
-	err := s.db.Where(&model.ApplicationAgent{
-		ApplicationID: applicationID,
-	}).Preload("Agent").Find(&agents).Error
+	err := s.db.Where("application_id = ?", applicationID).
+		Preload("Agent").Find(&agents).Error
 	if err != nil {
 		logger.Error("查询记录失败", logger.F("error", err))
 		return nil, constant.ErrDatabaseError
@@ -147,10 +146,8 @@ func (s *applicationService) AddApplicationAgent(ctx context.Context, applicatio
 }
 
 func (s *applicationService) DeleteApplicationAgent(ctx context.Context, applicationID, agentID uint64) error {
-	if err := s.db.Where(&model.ApplicationAgent{
-		ApplicationID: applicationID,
-		AgentID:       agentID,
-	}).Delete(&model.ApplicationAgent{}).Error; err != nil {
+	if err := s.db.Where("application_id = ? AND agent_id = ?", applicationID, agentID).
+		Delete(&model.ApplicationAgent{}).Error; err != nil {
 		logger.Error("删除记录失败", logger.F("error", err))
 		return constant.ErrDatabaseError
 	}

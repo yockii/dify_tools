@@ -496,7 +496,7 @@ func (h *AppHandler) DeleteApplicationAgent(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
-	if agent.ApplicationID == 0 || agent.AgentID == 0 {
+	if agent.ApplicationID == 0 && agent.AgentID == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 

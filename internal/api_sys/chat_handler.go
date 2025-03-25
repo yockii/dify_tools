@@ -226,8 +226,8 @@ func (h *ChatHandler) StopChatFlow(c *fiber.Ctx) error {
 }
 
 type SessionListRequest struct {
-	AppSecret string `json:"app_secret"`
-	AgentID   uint64 `json:"agent_id,string,omitzero"`
+	AppSecret string `json:"app_secret" query:"app_secret"`
+	AgentID   uint64 `json:"agent_id,string,omitzero" query:"agent_id"`
 }
 
 func (h *ChatHandler) GetSessionList(c *fiber.Ctx) error {

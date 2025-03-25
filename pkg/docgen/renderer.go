@@ -163,7 +163,7 @@ func (r *WordRenderer) convertHTMLToDOCX(htmlContent string, mermaidImages map[s
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
 `
 
-	// 添加更多样式支持，包括列表和引用样式
+	// 添加更多样式支持，包括列表、引用和表格样式
 	stylesXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:style w:type="paragraph" w:styleId="Normal">
@@ -242,6 +242,24 @@ func (r *WordRenderer) convertHTMLToDOCX(htmlContent string, mermaidImages map[s
       <w:i/>
       <w:color w:val="666666"/>
     </w:rPr>
+  </w:style>
+  <w:style w:type="table" w:styleId="TableGrid">
+    <w:name w:val="Table Grid"/>
+    <w:uiPriority w:val="59"/>
+    <w:rsid w:val="00000000"/>
+    <w:pPr>
+      <w:spacing w:after="0" w:line="240" w:lineRule="auto"/>
+    </w:pPr>
+    <w:tblPr>
+      <w:tblBorders>
+        <w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+        <w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+        <w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+        <w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+        <w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+        <w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+      </w:tblBorders>
+    </w:tblPr>
   </w:style>
 </w:styles>`
 
@@ -377,6 +395,9 @@ func (r *WordRenderer) htmlToWordXML(htmlContent string) string {
 
 	// 预处理：确保HTML标签之间的空白不会影响转换
 	htmlContent = strings.ReplaceAll(htmlContent, "> <", "><")
+
+	// 处理表格 - 在其他处理之前
+	htmlContent = processTables(htmlContent)
 
 	// 处理列表 - 在处理其他标签之前
 	htmlContent = processLists(htmlContent)
@@ -514,4 +535,110 @@ func processLists(html string) string {
 	})
 
 	return html
+}
+
+// processTables 处理HTML中的表格
+func processTables(html string) string {
+	// 查找所有表格
+	tableRegex := regexp.MustCompile(`<table>([\s\S]*?)</table>`)
+
+	return tableRegex.ReplaceAllStringFunc(html, func(tableHTML string) string {
+		// 提取表格内容
+		tableContent := tableRegex.FindStringSubmatch(tableHTML)[1]
+
+		// 解析表格行
+		rows := regexp.MustCompile(`<tr>([\s\S]*?)</tr>`).FindAllStringSubmatch(tableContent, -1)
+		if len(rows) == 0 {
+			return tableHTML // 没有行，返回原始HTML
+		}
+
+		// 开始构建Word表格
+		tableXML := `<w:tbl>
+  <w:tblPr>
+    <w:tblStyle w:val="TableGrid"/>
+    <w:tblW w:w="5000" w:type="pct"/>
+    <w:tblBorders>
+      <w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+      <w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+      <w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+      <w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+      <w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+      <w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>
+    </w:tblBorders>
+  </w:tblPr>
+  <w:tblGrid>`
+
+		// 计算列数（基于第一行的单元格数量）
+		firstRow := rows[0][1]
+		cols := regexp.MustCompile(`<t[hd]>([\s\S]*?)</t[hd]>`).FindAllString(firstRow, -1)
+		colCount := len(cols)
+
+		// 添加列定义
+		for i := 0; i < colCount; i++ {
+			tableXML += fmt.Sprintf(`
+    <w:gridCol w:w="%d"/>`, 5000/colCount)
+		}
+
+		tableXML += `
+  </w:tblGrid>`
+
+		// 处理每一行
+		for rowIndex, row := range rows {
+			rowContent := row[1]
+			tableXML += `
+  <w:tr>
+    <w:trPr>
+      <w:cantSplit/>
+    </w:trPr>`
+
+			// 处理单元格
+			cells := regexp.MustCompile(`<t[hd]>([\s\S]*?)</t[hd]>`).FindAllStringSubmatch(rowContent, -1)
+			for _, cell := range cells {
+				cellContent := cell[1]
+
+				// 检查是否为标题单元格 - 第一行或者是th标签
+				isHeader := rowIndex == 0 || strings.Contains(cell[0], "<th>")
+
+				tableXML += `
+    <w:tc>
+      <w:tcPr>
+        <w:tcW w:w="0" w:type="auto"/>`
+
+				if isHeader {
+					tableXML += `
+        <w:shd w:val="clear" w:color="auto" w:fill="E7E6E6"/>`
+				}
+
+				tableXML += `
+      </w:tcPr>
+      <w:p>
+        <w:pPr>
+          <w:spacing w:before="0" w:after="0"/>
+          <w:jc w:val="center"/>
+        </w:pPr>
+        <w:r>
+          <w:rPr>`
+
+				if isHeader {
+					tableXML += `
+            <w:b/>`
+				}
+
+				tableXML += `
+          </w:rPr>
+          <w:t>` + cellContent + `</w:t>
+        </w:r>
+      </w:p>
+    </w:tc>`
+			}
+
+			tableXML += `
+  </w:tr>`
+		}
+
+		tableXML += `
+</w:tbl>`
+
+		return tableXML
+	})
 }

@@ -6,13 +6,6 @@ import (
 )
 
 const (
-	// AgentTypeEmbed 内嵌代理
-	AgentTypeEmbed = 1 + iota
-	// AgentTypeApplication 应用代理
-	AgentTypeApplication
-)
-
-const (
 	InnerAgentCodeSqlBuilder     = "sql_builder"
 	InnerAgentCodeCommonChatFlow = "common_chat_flow"
 )
@@ -24,14 +17,17 @@ const (
 
 type Agent struct {
 	BaseModel
-	Code      string `json:"code" gorm:"type:varchar(100);not null;unique_index"`
-	Name      string `json:"name" gorm:"type:varchar(100);not null"`
+	Code string `json:"code" gorm:"type:varchar(100);not null;unique_index"`
+	Name string `json:"name" gorm:"type:varchar(100);not null"`
+	// 说明
+	Remark string `json:"remark" gorm:"type:varchar(100)"`
+	// 类型
 	Type      int    `json:"type" gorm:"type:int;not null"`
 	ApiSecret string `json:"apiSecret" gorm:"type:varchar(100);not null"`
 }
 
 func (a *Agent) TableComment() string {
-	return "AI代理配置表"
+	return "AI智能体配置表"
 }
 
 // BeforeCreate 创建前钩子
@@ -51,7 +47,7 @@ type ApplicationAgent struct {
 }
 
 func (a *ApplicationAgent) TableComment() string {
-	return "应用代理关联表"
+	return "应用智能体关联表"
 }
 
 // BeforeCreate 创建前钩子

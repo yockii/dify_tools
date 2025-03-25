@@ -95,7 +95,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 	}
 	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, req.AgentID)
 	if err != nil {
-		logger.Error("获取应用代理失败", logger.F("err", err))
+		logger.Error("获取应用智能体失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
 	}
 	apiSecret := ""
@@ -190,7 +190,7 @@ func (h *ChatHandler) GetSessionList(c *fiber.Ctx) error {
 
 	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, uint64(agentID))
 	if err != nil {
-		logger.Error("获取应用代理失败", logger.F("err", err))
+		logger.Error("获取应用智能体失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
 	}
 	apiSecret := ""
@@ -222,7 +222,7 @@ func (h *ChatHandler) GetSessionHistory(c *fiber.Ctx) error {
 
 	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, uint64(agentID))
 	if err != nil {
-		logger.Error("获取应用代理失败", logger.F("err", err))
+		logger.Error("获取应用智能体失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
 	}
 	apiSecret := ""
@@ -277,7 +277,7 @@ func (h *ChatHandler) StopChatFlow(c *fiber.Ctx) error {
 
 	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, req.AgentID)
 	if err != nil {
-		logger.Error("获取应用代理失败", logger.F("err", err))
+		logger.Error("获取应用智能体失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
 	}
 
@@ -397,7 +397,7 @@ func (h *ChatHandler) UploadFile(c *fiber.Ctx) error {
 
 		appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, req.AgentID)
 		if err != nil {
-			logger.Error("获取应用代理失败", logger.F("err", err))
+			logger.Error("获取应用智能体失败", logger.F("err", err))
 			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
 		}
 		apiSecret := ""
@@ -492,7 +492,7 @@ func (h *ChatHandler) DeleteConversation(c *fiber.Ctx) error {
 
 	appAgent, err := h.applicationService.GetApplicationAgent(c.Context(), application.ID, req.AgentID)
 	if err != nil {
-		logger.Error("获取应用代理失败", logger.F("err", err))
+		logger.Error("获取应用智能体失败", logger.F("err", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrInternalError))
 	}
 	apiSecret := ""

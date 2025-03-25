@@ -211,7 +211,7 @@ TIPS：真的要查询应用的数据的话，还需要在系统中配置数据�
 ## PPT生成
 可以在得到ppt大纲Markdown后，将大纲传入接口，生成PPT文件流保存
 
-`doc/common_flow.yml`已经设定了，可以判断`ppt outline:`之后的内容作为markdown内容传入（也可以作为可以生成ppt的判断）
+`doc/common_flow.yml`已经设定了，可以判断`ppt outline:`（建议更改为`<!-- ppt outline: -->`，这样前端可以避免显示该内容）之后的内容作为markdown内容传入（也可以作为可以生成ppt的判断）
 
 ## 工作室中创建自定义智能体
 如果要创建自定义智能体供本系统调用的，需要在开始节点增加字段：`app_secret`和`custom_id`，每次调用会传入这2个字段，可能为空

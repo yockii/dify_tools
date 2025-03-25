@@ -146,7 +146,7 @@ email:
    ```
 
 3. 配置SSL证书
-   建议使用Nginx反向代理并配置SSL：
+   建议使用Nginx反代并配置SSL：
 
    ```nginx
    server {

@@ -126,6 +126,16 @@ func (s *applicationService) ApplicationAgents(ctx context.Context, applicationI
 }
 
 func (s *applicationService) AddApplicationAgent(ctx context.Context, applicationID, agentID uint64) error {
+	// 先查重
+	var count int64
+	if err := s.db.Model(&model.ApplicationAgent{}).Where("application_id = ? AND agent_id = ?", applicationID, agentID).Count(&count).Error; err != nil {
+		logger.Error("查询记录失败", logger.F("error", err))
+		return constant.ErrDatabaseError
+	}
+	if count > 0 {
+		return nil
+	}
+
 	if err := s.db.Create(&model.ApplicationAgent{
 		ApplicationID: applicationID,
 		AgentID:       agentID,
@@ -163,19 +173,19 @@ func (s *applicationService) GetApplicationAgent(ctx context.Context, applicatio
 
 	var agent model.ApplicationAgent
 	if useDefaultAgent {
-		// 未指定代理，使用默认代理
+		// 未指定智能体，使用默认智能体
 		defaultAgentIDDict, err := s.dictService.GetByCode(ctx, constant.DictCodeDifyDefaultAgentID)
 		if err != nil {
 			logger.Error("获取字典值失败", logger.F("err", err))
 			return nil, err
 		}
 		if defaultAgentIDDict == nil || defaultAgentIDDict.Value == "" {
-			logger.Warn("未配置默认代理", logger.F("dict_id", defaultAgentIDDict.ID))
+			logger.Warn("未配置默认智能体", logger.F("dict_id", defaultAgentIDDict.ID))
 			return nil, constant.ErrDictNotConfigured
 		}
 		agentID = defaultAgentIDDict.ValueUint64()
 		if agentID == 0 {
-			logger.Warn("默认代理ID配置错误", logger.F("dict_id", defaultAgentIDDict.ID))
+			logger.Warn("默认智能体ID配置错误", logger.F("dict_id", defaultAgentIDDict.ID))
 			return nil, constant.ErrDictNotConfigured
 		}
 		var defaultAgentInstance model.Agent
@@ -195,13 +205,16 @@ func (s *applicationService) GetApplicationAgent(ctx context.Context, applicatio
 		}).Where("application_id = ?", applicationID).Preload("Agent").
 			First(&agent).Error
 		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, nil
+			}
 			logger.Error("查询记录失败", logger.F("error", err))
 			return nil, constant.ErrDatabaseError
 		}
 	}
 	agentMap[agentID] = &agent
 	if useDefaultAgent {
-		// 缓存默认代理
+		// 缓存默认智能体
 		agentMap[0] = &agent
 	}
 	return &agent, nil

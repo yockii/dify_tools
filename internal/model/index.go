@@ -313,30 +313,30 @@ func InitData(db *gorm.DB) error {
 				}
 			}
 
-			// 内嵌代理数据初始化
+			// 内嵌智能体数据初始化
 			{
 				commonFlowAgent := &Agent{}
 				if err := tx.Where(&Agent{
 					Code: InnerAgentCodeCommonChatFlow,
-					Type: AgentTypeApplication,
+					Type: 1,
 				}).Attrs(&Agent{
 					Name: InnerAgentNameCommonChatFlow,
 				}).FirstOrCreate(commonFlowAgent).Error; err != nil {
 					return fmt.Errorf("create agent failed: %v", err)
 				}
 
-				// 增加字典数据-默认代理ID
+				// 增加字典数据-默认智能体ID
 				if err := tx.Model(&Dict{}).Where(&Dict{
 					Code: constant.DictCodeDifyDefaultAgentID,
 				}).Assign(&Dict{
-					Name:     "默认代理ID",
+					Name:     "默认智能体ID",
 					Value:    fmt.Sprintf("%d", commonFlowAgent.ID),
 					ParentID: difyDict.ID,
 				}).FirstOrCreate(&Dict{}).Error; err != nil {
 					return fmt.Errorf("update dict failed: %v", err)
 				}
 
-				// 增加本系统的通用流程代理
+				// 增加本系统的通用流程智能体
 				if err := tx.Where(map[string]any{
 					"agent_id":       commonFlowAgent.ID,
 					"application_id": 0,

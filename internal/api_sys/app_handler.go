@@ -465,7 +465,7 @@ func (h *AppHandler) DeleteDataSourceColumn(c *fiber.Ctx) error {
 //////////               ApplicationAgent                //////////
 //region///////////////////////////////////////////////////////////
 
-// NewApplicationAgent 新建应用代理
+// NewApplicationAgent 新建应用智能体
 func (h *AppHandler) NewApplicationAgent(c *fiber.Ctx) error {
 	var agent model.ApplicationAgent
 	if err := c.BodyParser(&agent); err != nil {
@@ -473,7 +473,7 @@ func (h *AppHandler) NewApplicationAgent(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
-	if agent.ApplicationID == 0 || agent.AgentID == 0 {
+	if agent.ApplicationID == 0 && agent.AgentID == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
@@ -488,7 +488,7 @@ func (h *AppHandler) NewApplicationAgent(c *fiber.Ctx) error {
 	return c.JSON(service.OK(agent))
 }
 
-// DeleteApplicationAgent 删除应用代理
+// DeleteApplicationAgent 删除应用智能体
 func (h *AppHandler) DeleteApplicationAgent(c *fiber.Ctx) error {
 	var agent model.ApplicationAgent
 	if err := c.BodyParser(&agent); err != nil {
@@ -511,7 +511,7 @@ func (h *AppHandler) DeleteApplicationAgent(c *fiber.Ctx) error {
 	return c.JSON(service.OK(nil))
 }
 
-// GetApplicationAgentList 获取应用代理列表
+// GetApplicationAgentList 获取应用智能体列表
 func (h *AppHandler) GetApplicationAgentList(c *fiber.Ctx) error {
 	applicationID, err := strconv.ParseUint(c.Query("application_id"), 10, 64)
 	if err != nil {

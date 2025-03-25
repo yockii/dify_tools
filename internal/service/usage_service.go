@@ -48,7 +48,7 @@ func (s *usageService) Delete(ctx context.Context, id uint64) error {
 	return constant.ErrMethodNotAllow
 }
 
-func (s *usageService) CreateByEndMessage(applicationID uint64, endMessage string) {
+func (s *usageService) CreateByEndMessage(applicationID, agentID uint64, endMessage string) {
 	j := gjson.Parse(endMessage)
 	if j.Get("event").String() != "message_end" {
 		return
@@ -57,6 +57,7 @@ func (s *usageService) CreateByEndMessage(applicationID uint64, endMessage strin
 	now := time.Now()
 	record := &model.Usage{
 		ApplicationID:    applicationID,
+		AgentID:          agentID,
 		Date:             now.Format("2006-01-02"),
 		PromptTokens:     int(j.Get("metadata.usage.prompt_tokens").Int()),
 		CompletionTokens: int(j.Get("metadata.usage.completion_tokens").Int()),

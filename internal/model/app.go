@@ -116,6 +116,7 @@ func (c *ColumnInfo) BeforeCreate(tx *gorm.DB) error {
 type Usage struct {
 	BaseModel
 	ApplicationID    uint64    `json:"applicationId,string" gorm:"index;not null"`
+	AgentID          uint64    `json:"agentId,string" gorm:"index;not null"`        //
 	Date             string    `json:"date" gorm:"type:varchar(10);index;not null"` // YYYY-MM-DD
 	PromptTokens     int       `json:"promptTokens" gorm:"type:int;default:0;not null"`
 	CompletionTokens int       `json:"completionTokens" gorm:"type:int;default:0;not null"`

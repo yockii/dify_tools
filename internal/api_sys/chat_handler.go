@@ -153,7 +153,7 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 				return nil
 			}
 
-			go h.usageService.CreateByEndMessage(0, string(data))
+			go h.usageService.CreateByEndMessage(appAgent.ApplicationID, appAgent.AgentID, string(data))
 
 			if _, err := w.Write(append([]byte("data: "), data...)); err != nil {
 				logger.Error("发送消息失败", logger.F("err", err))

@@ -120,7 +120,7 @@ type AgentService interface {
 
 type UsageService interface {
 	BaseService[*model.Usage]
-	CreateByEndMessage(applicationID uint64, endMessage string)
+	CreateByEndMessage(applicationID, agentID uint64, endMessage string)
 }
 
 // /////////////////////////////

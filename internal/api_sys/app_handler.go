@@ -81,6 +81,7 @@ func (h *AppHandler) RegisterRoutesV1(router fiber.Router, authMiddleware fiber.
 	{
 		agent.Post("/new", h.NewApplicationAgent)
 		agent.Get("/list", h.GetApplicationAgentList)
+		agent.Post("/delete", h.DeleteApplicationAgent)
 	}
 
 	usage := apps.Group("/usage")

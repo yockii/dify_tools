@@ -57,9 +57,7 @@ func (s *dataSourceService) ListOmitColumns() []string {
 }
 
 func (s *dataSourceService) BuildCondition(query *gorm.DB, condition *model.DataSource) *gorm.DB {
-	if condition.ApplicationID != 0 {
-		query = query.Where("application_id = ?", condition.ApplicationID)
-	}
+	query = query.Where("application_id = ?", condition.ApplicationID)
 	if condition.Name != "" {
 		query = query.Where("name LIKE ?", "%"+condition.Name+"%")
 	}

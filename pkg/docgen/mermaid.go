@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,9 @@ func (r *MermaidRenderer) SetServiceURL(url string) {
 
 // RenderMermaid 渲染Mermaid代码为图片
 func (r *MermaidRenderer) RenderMermaid(code string) ([]byte, error) {
+	// 预处理：检测并添加必要的mermaid语法
+	code = r.preProcessMermaidCode(code)
+
 	// 使用两种方式尝试渲染：先尝试直接API渲染，失败则尝试下载图片
 	imgBytes, err := r.renderViaMermaidAPI(code)
 	if err == nil {
@@ -41,6 +45,24 @@ func (r *MermaidRenderer) RenderMermaid(code string) ([]byte, error) {
 
 	// 如果API渲染失败，尝试通过mermaid.ink服务
 	return r.renderViaMermaidInk(code)
+}
+
+// preProcessMermaidCode 预处理mermaid代码，添加必要的语法或转换
+func (r *MermaidRenderer) preProcessMermaidCode(code string) string {
+	// 如果是xychart-beta，确保其格式正确
+	lines := strings.Split(code, "\n")
+	if len(lines) > 0 && strings.TrimSpace(lines[0]) == "xychart-beta" {
+		// 转换为标准的mermaid语法
+		return "xychart" + code[len("xychart-beta"):]
+	}
+
+	// 如果代码中包含"pie title"但不是以pie开头，添加pie前缀
+	if !strings.HasPrefix(strings.TrimSpace(code), "pie") &&
+		strings.Contains(code, "pie title") {
+		return "pie\n" + code
+	}
+
+	return code
 }
 
 // 通过Mermaid API渲染（如果有可用的本地或自定义API）
@@ -71,11 +93,14 @@ func (r *MermaidRenderer) renderViaMermaidAPI(code string) ([]byte, error) {
 
 // 通过mermaid.ink服务渲染
 func (r *MermaidRenderer) renderViaMermaidInk(code string) ([]byte, error) {
+	// 对代码进行特殊处理
+	code = r.sanitizeMermaidCode(code)
+
 	// 对代码进行base64编码
 	encoded := base64.URLEncoding.EncodeToString([]byte(code))
 
 	// 构建mermaid.ink URL
-	url := "https://mermaid.ink/img/" + encoded
+	url := "https://mermaid.ink/img/" + encoded + "?bgColor=white"
 
 	// 获取图片
 	resp, err := r.client.Get(url)
@@ -89,6 +114,12 @@ func (r *MermaidRenderer) renderViaMermaidInk(code string) ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+// sanitizeMermaidCode 清理并格式化mermaid代码
+func (r *MermaidRenderer) sanitizeMermaidCode(code string) string {
+	// 确保编码前的简单清理，处理特殊字符等
+	return strings.ReplaceAll(code, "\r\n", "\n")
 }
 
 // RenderSvg 渲染Mermaid代码为SVG（可选功能）

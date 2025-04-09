@@ -73,3 +73,13 @@ func (s *tableInfoService) Delete(ctx context.Context, id uint64) error {
 	}
 	return nil
 }
+
+func (s *tableInfoService) ListSchemaForDify(ctx context.Context, condition *model.TableInfo) ([]*model.TableInfo, error) {
+	var list []*model.TableInfo
+	if err := s.db.Select("ID", "Name", "Comment").
+		Where(condition).Find(&list).Error; err != nil {
+		logger.Error("查询表信息失败", logger.F("err", err))
+		return nil, constant.ErrDatabaseError
+	}
+	return list, nil
+}

@@ -215,7 +215,7 @@ func (h *AppHandler) CreateDataSource(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 
-	if dataSource.ApplicationID == 0 || dataSource.Name == "" || dataSource.Host == "" || dataSource.Port == 0 {
+	if dataSource.Name == "" || dataSource.Host == "" || dataSource.Port == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(service.Error(constant.ErrInvalidParams))
 	}
 

@@ -93,6 +93,7 @@ type DataSourceService interface {
 
 type TableInfoService interface {
 	BaseService[*model.TableInfo]
+	ListSchemaForDify(ctx context.Context, condition *model.TableInfo) ([]*model.TableInfo, error)
 }
 
 type ColumnInfoService interface {

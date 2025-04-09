@@ -64,8 +64,8 @@ func (d *DataSource) BeforeCreate(tx *gorm.DB) error {
 // TableInfo 表信息
 type TableInfo struct {
 	BaseModel
-	ApplicationID uint64    `json:"applicationId,string" gorm:"index;not null"`
-	DataSourceID  uint64    `json:"dataSourceId,string" gorm:"index;not null"`
+	ApplicationID uint64    `json:"applicationId,string,omitzero" gorm:"index;not null"`
+	DataSourceID  uint64    `json:"dataSourceId,string,omitzero" gorm:"index;not null"`
 	Name          string    `json:"name" gorm:"type:varchar(50);not null"`
 	Comment       string    `json:"comment" gorm:"type:varchar(200)"`
 	UpdatedAt     time.Time `json:"updatedAt,omitzero" gorm:"type:timestamp;not null"`

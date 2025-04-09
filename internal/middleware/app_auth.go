@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/yockii/dify_tools/internal/constant"
+	"github.com/yockii/dify_tools/internal/model"
 	"github.com/yockii/dify_tools/internal/service"
 )
 
@@ -17,7 +18,14 @@ func NewAppMiddleware(
 		apiKey := strings.TrimPrefix(authorization, "Bearer ")
 
 		if apiKey == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
+			// 本系统
+			application := &model.Application{
+				Name: "dify_tools",
+			}
+			c.Locals("application", application)
+			return c.Next()
+
+			// return c.Status(fiber.StatusUnauthorized).JSON(service.Error(constant.ErrUnauthorized))
 		}
 
 		// 检查api_key是否有效

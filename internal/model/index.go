@@ -17,7 +17,7 @@ type Model interface {
 }
 
 type BaseModel struct {
-	ID        uint64    `json:"id,string" gorm:"primaryKey"`
+	ID        uint64    `json:"id,string,omitzero" gorm:"primaryKey"`
 	CreatedAt time.Time `json:"createdAt,omitzero" gorm:"type:timestamp;not null"`
 }
 

@@ -86,30 +86,28 @@ func (h *DatabaseHandler) GetDatabaseSchema(c *fiber.Ctx) error {
 
 	// 获取database同步好的数据记录
 	var tables []*TableWithColumns
-	var total int64 = 1
-	for len(tables) < int(total) {
-		var list []*model.TableInfo
-		list, total, err = h.tableInfoService.List(c.Context(), &model.TableInfo{
-			DataSourceID: dataSource.ID,
-		}, len(tables), 100)
+	var list []*model.TableInfo
+	list, err = h.tableInfoService.ListSchemaForDify(c.Context(), &model.TableInfo{
+		DataSourceID: dataSource.ID,
+	})
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
+	}
+
+	for _, t := range list {
+		twc := new(TableWithColumns)
+		twc.TableInfo = t
+		var cl []*model.ColumnInfo
+
+		cl, err = h.columnInfoService.ListSchemaForDify(c.Context(), &model.ColumnInfo{
+			TableID: t.ID,
+		})
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
 		}
-
-		for _, t := range list {
-			twc := new(TableWithColumns)
-			twc.TableInfo = t
-			var cl []*model.ColumnInfo
-
-			cl, err = h.columnInfoService.ListSchemaForDify(c.Context(), &model.ColumnInfo{
-				TableID: t.ID,
-			})
-			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(service.Error(constant.ErrDatabaseError))
-			}
-			twc.Columns = cl
-			tables = append(tables, twc)
-		}
+		twc.Columns = cl
+		twc.ID = 0
+		tables = append(tables, twc)
 	}
 
 	return c.JSON(service.OK(tables))
